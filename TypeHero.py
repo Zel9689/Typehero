@@ -7,7 +7,8 @@ import random
 #控制角色移動(上下)
 #角色打對字射出子彈(自動瞄準)
 #角色被字碰到會扣血
-#魔王的血量
+#魔王的血量和血條連動
+#打錯魔王會加血
 #同時跑出畫面外的字會有問題 吧?
 #刪除List資料使用Pop會有bug，因為Pop是拿掉資料後再回傳List存起來，太慢??
 
@@ -24,7 +25,7 @@ def compare():
         if(playerInput == i): #成功打入一樣的字母
             j = randomText.index(i)
             removeNum = removeText(j,0)
-            monsterHP -= removeNum*5
+            monsterHP -= removeNum*5 #消一個扣5HP
             print(removeNum)
             print('你打對',playerInput,'了')
             print(monsterHP)
@@ -101,9 +102,14 @@ monsterCenter = [resolution[0]-monsterWidth/2, resolution[1]/2]
 monster_dy = 3 #移動速度
 
 #monsters HP
-monsterHP = 100
-HP = pygame.Surface((200,20))
+monsterHP_origin = 100
+monsterHP = monsterHP_origin
+HP = pygame.Surface((200,20)) #HP裡面
 HP.fill((0,0,0))
+HP = HP.convert()
+HPoutline = pygame.Surface((206,26)) #HP外框
+HPoutline.fill((255,255,255))
+HPoutline = HPoutline.convert()
 #game clock
 clock = pygame.time.Clock()
 lastTick = 0
@@ -123,13 +129,12 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                running = False
         #玩家輸入
         if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     compare() #比較有沒有打一樣的
+                    playerInput = ''
+                if event.key == pygame.K_ESCAPE:
                     playerInput = ''
                 elif event.key == pygame.K_BACKSPACE:
                     playerInput = playerInput[:-1]
@@ -186,7 +191,9 @@ while running:
             if (TextRight <= 0):
                 removeText(j,1)
     #monsterHPbar
-    screen.blit(HP, (monsterRect.left + 55, monsterRect.top - 20))
+    HP = pygame.Surface((200*monsterHP/monsterHP_origin,20))
+    screen.blit(HPoutline, (monsterRect.left + 55, monsterRect.top - 20))
+    screen.blit(HP, (monsterRect.left + 58, monsterRect.top - 17))
 
     pygame.display.update()
     if (len(Text) > 10): #字的數量超過10就pop掉一個
