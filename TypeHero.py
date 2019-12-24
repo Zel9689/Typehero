@@ -3,7 +3,8 @@ import pygame.font as Pyfont
 import os
 import random
 
-#Todo 怪物嘴巴閉的同時字跑出 時機是隨機的
+#Todo 字跑出的時機
+#Todo 鍵盤輸入消字
 
 #文字隨機出和隨機角度
 def randomWordsAngle():
@@ -12,7 +13,7 @@ def randomWordsAngle():
 
 #nonPygame side
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
-f = open(path + '\dictionary.txt','r')
+f = open(path + '\dictionary.txt','r') #開啟字典
 Dict = f.read()
 words = Dict.splitlines() #字的List
 wordsNum = len(words) #字的數量
@@ -75,6 +76,7 @@ Count01 = 0 #monster的counter
 Count02 = 0 #Text的counter
 randomWordsAngle() #先產生一個字
 TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
+TextPosition[0][0] -= 50
 while running:
     clock.tick(30) #fps
     for event in pygame.event.get():
@@ -82,7 +84,7 @@ while running:
             running = False
     screen.blit(background, (0,0))
     
-    #monster movement
+    #monster 移動&反彈
     monsterCenter[1] += monster_dy
     monsterRect.center = (monsterCenter)
     if (monsterRect.top<=0 or monsterRect.bottom>=screen.get_height()):
@@ -93,12 +95,14 @@ while running:
         if(Count01 == 5): #集滿五次觸發換monster圖片
             monsterMode = not monsterMode
             Count01 = 0
-        if(Count02 == 10): #集滿十次觸發Text產生
+        if(Count02 == 20): #集滿十次觸發Text產生
             randomWordsAngle()
             j = len(Text)
             TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
-            print('0')
             Count02 = 0
+            #修正文字到嘴巴的位置
+            TextPosition[0][0] -= 55
+            TextPosition[0][1] += 20
         lastTick = pygame.time.get_ticks()
         Count01 += 1
         Count02 += 1
@@ -108,15 +112,20 @@ while running:
         screen.blit(monsterChange,monsterRect.topleft)
     if(len(Text) != 0): #字
         #Text movement and blit(掃描的概念)
-        for i in Text:
-            j = Text.index(i)
+        for i in Text: #i = 掃到的字
+            j = Text.index(i) #j = 那個字的index
+            TextTop = TextPosition[j][1]
+            TextBottom = TextPosition[j][1] + 20
+            if (TextTop <= 0 or TextBottom >= screen.get_height()):  #字反彈
+                Text_dy[j] *= -1
             TextPosition[j][0] += Text_dx
             TextPosition[j][1] += Text_dy[j]
-            screen.blit(i, (TextPosition[j][0], TextPosition[j][1]))
+            screen.blit(i, (TextPosition[j][0], TextPosition[j][1])) #字移動
 
     pygame.display.update()
-    if (len(Text) > 10):
-        Text.clear()
-        randomWordsAngle()
+    if (len(Text) > 10): #字的數量超過10就pop掉一個
+        Text.pop()
+        Text_dy.pop()
+        TextPosition.pop()
 pygame.font.quit()
 pygame.quit()
