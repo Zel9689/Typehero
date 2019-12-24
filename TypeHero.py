@@ -11,6 +11,11 @@ def randomWordsAngle():
     Text.insert(0, Font.render(random.choice(words), True, (0,0,0))) #在Text List插入隨機的字到index 0
     Text_dy.insert(0, random.randint(-2,2)) #Text_dy -2~2 隨機 插入index 0
 
+def compare():
+    for i in Text:
+        if(playerInput == i):
+            print(playerInput)
+
 #nonPygame side
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
 f = open(path + '\dictionary.txt','r') #開啟字典
@@ -29,6 +34,9 @@ pygame.display.set_caption("Type Hero")
 resolution = (1024, 768)
 screen = pygame.display.set_mode(resolution)
 background = pygame.Surface(screen.get_size())
+#pygame.event.pump()
+#pygame.event.set_blocked(pygame.MOUSEMOTION)
+
 
 
 #background
@@ -70,6 +78,7 @@ clock = pygame.time.Clock()
 lastTick = 0
 
 #Loop
+
 running = True
 monsterMode = True
 Count01 = 0 #monster的counter
@@ -77,11 +86,27 @@ Count02 = 0 #Text的counter
 randomWordsAngle() #先產生一個字
 TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
 TextPosition[0][0] -= 50
+playerInput = ''
 while running:
     clock.tick(30) #fps
+    pygame.key.start_text_input()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                running = False
+        #玩家輸入
+        if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    
+                    compare()
+                    playerInput = ''
+                elif event.key == pygame.K_BACKSPACE:
+                    playerInput = playerInput[:-1]
+                else:
+                    playerInput += event.unicode
+        
     screen.blit(background, (0,0))
     
     #monster 移動&反彈
@@ -95,7 +120,7 @@ while running:
         if(Count01 == 5): #集滿五次觸發換monster圖片
             monsterMode = not monsterMode
             Count01 = 0
-        if(Count02 == 20): #集滿十次觸發Text產生
+        if(Count02 == 50): #集滿十次觸發Text產生
             randomWordsAngle()
             j = len(Text)
             TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
@@ -121,6 +146,7 @@ while running:
             TextPosition[j][0] += Text_dx
             TextPosition[j][1] += Text_dy[j]
             screen.blit(i, (TextPosition[j][0], TextPosition[j][1])) #字移動
+        
 
     pygame.display.update()
     if (len(Text) > 10): #字的數量超過10就pop掉一個
