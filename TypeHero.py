@@ -1,21 +1,35 @@
 import pygame
+import pygame.font as Pyfont
 import os
+import random
+
+#nonPygame side
+path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
+f = open(path + '\dictionary.txt','r')
+Dict = f.read()
+words = Dict.splitlines() #字的List
+wordsNum = len(words) #字的數量
+for i in range(wordsNum):
+    words[i] = words[i].strip('\'')
+
 
 #init
 pygame.init()
+pygame.font.init()
 pygame.display.set_caption("Type Hero")
-resolutionX=800
-resolutionY=600
-screen = pygame.display.set_mode((resolutionX, resolutionY))
+resolution = (1024, 768)
+screen = pygame.display.set_mode(resolution)
 background = pygame.Surface(screen.get_size())
-path = os.path.split(os.path.abspath(__file__))[0]
 
 #background
 background.fill((125,125,125))
 background = background.convert()
 
 #words
-
+fontLocation = Pyfont.match_font('Minecraft Regular')
+Font = Pyfont.Font(fontLocation, 20)
+Text = Font.render(words[0], True, (0,0,0))
+TextPosition = [1024, random.randint(20, resolution[1]-20)]
 #player picture
 
 #player's bullet
@@ -24,32 +38,19 @@ background = background.convert()
 
 #monsters picture
 monster = pygame.image.load(os.path.join(path, 'monster01.png'))
-monster = monster.convert()
+monster = monster.convert_alpha()
 monsterRect = monster.get_rect()
 monsterHeight = monsterRect.height
 monsterWidth = monsterRect.width
-print('height= ', monsterHeight)
-print('width= ', monsterWidth)
-monsterRect.center = (800,500) #微調怪物位置
-x, y = monsterRect.topleft
-print(x,y)
+#monsters pictrue_b
+monsterChange = pygame.image.load(os.path.join(path, 'monster01_b.png'))
+monsterChange = monsterChange.convert_alpha()
+#monsterPosition
+monsterCenter = [resolution[0]-monsterWidth/2, resolution[1]/2]
+
 dy = 3 #移動速度
-print(monsterRect.top)
-print(monsterRect.bottom)
 
 #monsters health
-
-
-#ball(example code)
-'''
-ball = pygame.Surface((30,30))
-ball.fill((255,255,255))
-pygame.draw.circle(ball, (0,0,255), (15,15), 15, 0)
-rect1 = ball.get_rect()
-rect1.center = (26,300)
-x, y = rect1.topleft
-dx = 3
-'''
 
 #game clock
 clock = pygame.time.Clock()
@@ -57,18 +58,24 @@ clock = pygame.time.Clock()
 #Loop
 running = True
 while running:
-    clock.tick(30)
+    clock.tick(30) #fps
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
     screen.blit(background, (0,0))
+    screen.blit(Text, TextPosition)
 
 #moving monster
-    y += dy
-    monsterRect.center = (x, y)
+    monsterCenter[1] += dy
+    monsterRect.center = (monsterCenter)
     if (monsterRect.top<=0 or monsterRect.bottom>=screen.get_height()):
         dy *= -1
-    screen.blit(monster,monsterRect.topleft)
+    #每500ms換一次圖片
+    if (pygame.time.get_ticks()%1000 <= 500): 
+        screen.blit(monster,monsterRect.topleft)
+    else:
+        screen.blit(monsterChange,monsterRect.topleft)
 
     pygame.display.update()
+pygame.font.quit()
 pygame.quit()
