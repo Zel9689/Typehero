@@ -4,17 +4,31 @@ import os
 import random
 
 #Todo 字跑出的時機
-#Todo 鍵盤輸入消字
+#Todo 字超過左邊就沒機會了
 
 #文字隨機出和隨機角度
 def randomWordsAngle():
-    Text.insert(0, Font.render(random.choice(words), True, (0,0,0))) #在Text List插入隨機的字到index 0
+    randomText.insert(0, random.choice(words))
+    Text.insert(0, Font.render(randomText[0], True, (0,0,0))) #在Text List插入隨機的字到index 0
     Text_dy.insert(0, random.randint(-2,2)) #Text_dy -2~2 隨機 插入index 0
 
+#比較打對哪個字的函式
 def compare():
-    for i in Text:
-        if(playerInput == i):
-            print(playerInput)
+    for i in randomText:
+        if(playerInput == i): #成功打入一樣的字母
+            removeText(i)
+            print('你打對',playerInput,'了')
+        else: #沒打對的話
+            pass
+
+#專門刪除List內的字
+def removeText(i): #i = 真的字 j = 那個字的index
+    while(i in randomText):
+        j = randomText.index(i)
+        Text.remove(Text[j])
+        randomText.remove(i)
+        Text_dy.remove(Text_dy[j])
+        TextPosition.remove(TextPosition[j])
 
 #nonPygame side
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
@@ -26,6 +40,7 @@ for i in range(wordsNum):
     words[i] = words[i].strip('\'')
 Text = [] #準備給遊戲渲染的字串list
 Text_dy = [] #字移動的dy List
+randomText = [] #真的字的List
 
 #init
 pygame.init()
@@ -99,8 +114,7 @@ while running:
         #玩家輸入
         if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    
-                    compare()
+                    compare() #比較有沒有打一樣的
                     playerInput = ''
                 elif event.key == pygame.K_BACKSPACE:
                     playerInput = playerInput[:-1]
@@ -120,7 +134,7 @@ while running:
         if(Count01 == 5): #集滿五次觸發換monster圖片
             monsterMode = not monsterMode
             Count01 = 0
-        if(Count02 == 50): #集滿十次觸發Text產生
+        if(Count02 == 20): #集滿十次觸發Text產生
             randomWordsAngle()
             j = len(Text)
             TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
@@ -139,13 +153,22 @@ while running:
         #Text movement and blit(掃描的概念)
         for i in Text: #i = 掃到的字
             j = Text.index(i) #j = 那個字的index
+            #------------------------------------------#
+            #text的rect.top rect.bottom怪怪的，只好這樣用#
+            #------------------------------------------#
+            TextWidth = i.get_rect()
+            TextWidth = TextWidth.width
             TextTop = TextPosition[j][1]
             TextBottom = TextPosition[j][1] + 20
+            TextRight = TextPosition[j][0] + TextWidth
             if (TextTop <= 0 or TextBottom >= screen.get_height()):  #字反彈
                 Text_dy[j] *= -1
             TextPosition[j][0] += Text_dx
             TextPosition[j][1] += Text_dy[j]
             screen.blit(i, (TextPosition[j][0], TextPosition[j][1])) #字移動
+            if (TextRight <= 0):
+                removeText(randomText[j])
+                print(randomText[j],'被丟棄了')
         
 
     pygame.display.update()
