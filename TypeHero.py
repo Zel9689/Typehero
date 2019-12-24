@@ -9,6 +9,7 @@ import random
 #角色被字碰到會扣血
 #魔王的血量
 #同時跑出畫面外的字會有問題 吧?
+#刪除List資料使用Pop會有bug，因為Pop是拿掉資料後再回傳List存起來，太慢??
 
 #文字隨機出和隨機角度
 def randomWordsAngle():
@@ -17,19 +18,14 @@ def randomWordsAngle():
     Text_dy.insert(0, random.randint(-2,2)) #Text_dy -2~2 隨機 插入index 0
 
 #比較打對哪個字的函式
-class removeText():
-    def __init__(self, name):
-    self.name = name
-a = Animal("dog")  #建立一個名叫dog的Animal實體(物件)
-print(a.name)
-
 def compare():
     global monsterHP
     for i in randomText:
         if(playerInput == i): #成功打入一樣的字母
-            
-            removeNum = removeText(i,0)
+            j = randomText.index(i)
+            removeNum = removeText(j,0)
             monsterHP -= removeNum*5
+            print(removeNum)
             print('你打對',playerInput,'了')
             print(monsterHP)
         else: #沒打對的話
@@ -38,19 +34,19 @@ def compare():
 #專門刪除List內的字
 def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
     Count = 0
-    if(mode = 0):
-        while(i in randomText):
+    i = randomText[j]
+    while(i in randomText):
+        if(mode == 0):
             j = randomText.index(i)
-            Text.remove(Text[j])
-            randomText.remove(i)
-            Text_dy.remove(Text_dy[j])
-            TextPosition.remove(TextPosition[j])
-            if(mode==1):
-                break
-            Count += 1
+        del Text[j]
+        del randomText[j]
+        del Text_dy[j]
+        del TextPosition[j]
+        if(mode == 1):
+            break  
+        Count += 1
+    if(mode == 0):
         return Count
-    if(mode = 1):
-        
 
 #nonPygame side
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
@@ -70,8 +66,6 @@ pygame.font.init()
 pygame.display.set_caption("Type Hero")
 resolution = (1024, 768)
 screen = pygame.display.set_mode(resolution)
-
-
 
 #background
 background = pygame.Surface(screen.get_size())
@@ -115,7 +109,6 @@ clock = pygame.time.Clock()
 lastTick = 0
 
 #Loop
-
 running = True
 monsterMode = True
 Count01 = 0 #monster的counter
@@ -158,6 +151,7 @@ while running:
             Count01 = 0
         if(Count02 == 20): #集滿十次觸發Text產生
             randomWordsAngle()
+            print(randomText)
             j = len(Text)
             TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
             Count02 = 0
@@ -188,11 +182,9 @@ while running:
             TextPosition[j][0] += Text_dx
             TextPosition[j][1] += Text_dy[j]
             screen.blit(i, (TextPosition[j][0], TextPosition[j][1])) #字移動
+            #字超過螢幕左邊就刪掉
             if (TextRight <= 0):
-                print(randomText)
-                print(randomText[j],'被丟棄了')
-                removeText(randomText[j],1)
-                print(randomText)
+                removeText(j,1)
     #monsterHPbar
     screen.blit(HP, (monsterRect.left + 55, monsterRect.top - 20))
 
