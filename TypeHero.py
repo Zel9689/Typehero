@@ -5,9 +5,7 @@ import random
 import math
 #角色子彈動畫
 #角色射擊動作
-#角色連續移動
 #勝利 落敗畫面
-#輸入正確enter顏色不同
 #1 blit per frame
 
 def TextAttributes(i):
@@ -33,14 +31,24 @@ def randomWordsAngle():
     randomText.insert(0, random.choice(words))
     Text.insert(0, Font.render(randomText[0], True, (255,255,255))) #在Text List插入隨機的字到index 0
     Text_dy.insert(0, random.randint(-2,2)) #Text_dy -2~2 隨機 插入index 0
+    print(randomText)
+    TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
+    #修正文字到嘴巴的位置
+    TextPosition[0][0] -= 55
+    TextPosition[0][1] += 15
 
 #比較打對哪個字的函式
 def compare():
-    global monsterHP, heroHP
+    global monsterHP, heroHP, monsterHPflag, playerTextColorFlag
     flag_success = False
+    monsterHPflag = flag_success
+    playerTextColorFlag = flag_success
+    IsItPassedIF = 0
     for i in randomText:
         if(playerInput == i): #成功打入一樣的字母
             flag_success = True
+            monsterHPflag = flag_success
+            playerTextColorFlag = flag_success
             j = randomText.index(i)
             removeNum = removeText(j,0)
             monsterHP -= removeNum*5 #消一個monster扣5HP
@@ -52,8 +60,9 @@ def compare():
             print(removeNum)
             print('你打對',playerInput,'了')
             print(monsterHP)
+            IsItPassedIF += 1
     if(not flag_success):#沒打對的話
-        monsterHP += 5
+        monsterHP += 5 #monster加血
         if(monsterHP > monsterHP_origin):
             monsterHP = monsterHP_origin
 
@@ -90,7 +99,7 @@ randomText = [] #真的字的List
 pygame.init()
 pygame.font.init()
 pygame.display.set_caption("Type Hero")
-resolution = [1024, 768]
+resolution = [1280, 768]
 screen = pygame.display.set_mode(resolution)
 
 #background
@@ -132,7 +141,7 @@ heroChange = pygame.image.load(os.path.join(path, 'hero01_b.png'))
 herorChange = heroChange.convert_alpha()
 heroChange = pygame.transform.scale(heroChange, (150,120)) #hero大小調整
 #heroPosition
-heroCenter = [0 + heroWidth/2, resolution[1]/2]
+heroCenter = [math.floor(resolution[0]/3), math.floor(resolution[1]/2)]
 moveSpeed = 10 #按一下移動多少
 hero_dy = moveSpeed 
 hero_dx = moveSpeed
@@ -169,6 +178,12 @@ monsterHPwidth = 180
 #game clock
 clock = pygame.time.Clock()
 lastTick = 0
+#hitboxShift
+leftShift = 25
+rightShift = -72
+topShift = 17
+widthShift = rightShift - leftShift
+heightShift = -topShift
 
 #Loop
 running = True
@@ -176,16 +191,18 @@ monsterMode = True
 Count01 = 0 #monster的counter
 Count02 = 0 #Text的counter
 Count03 = 0 #Enter按下後動畫的counter
+Count04 = 0 #Back壓著的counter
+Count05 = 0 #monster血變紅的counter
 randomWordsAngle() #先產生一個字
-TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
-TextPosition[0][0] -= 50
+monsterHPcolor = [255,255,255]
+monsterHPflag = False
 
-
-#playerText_enter = Font.render(playerInput, True, (255,0,0))
 holdUP = False
 holdDOWN = False
 holdLEFT = False
 holdRIGHT = False
+holdBACK = False
+flag_success = False
 enterBool = False
 while running:
     clock.tick(30) #fps
@@ -194,15 +211,16 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 compare() #比較有沒有打一樣的
-                playerText_enter = playerText
-                playerInput = ''
                 enterBool = True
+                inputCache = playerInput
+                playerInput = ''
             elif event.key == pygame.K_ESCAPE:
+                enterBool = False
                 playerInput = '' #清空字
-                enterBool = False
             elif event.key == pygame.K_BACKSPACE:
-                playerInput = playerInput[:-1] #刪一個字
+                holdBACK = True
                 enterBool = False
+                playerInput = playerInput[:-1]
             elif event.key == pygame.K_UP:
                 holdUP = True
             elif event.key == pygame.K_DOWN:
@@ -223,6 +241,8 @@ while running:
                 holdLEFT = False
             elif event.key == pygame.K_RIGHT:
                 holdRIGHT = False
+            elif event.key == pygame.K_BACKSPACE:
+                holdBACK = False
         if event.type == pygame.QUIT:
             running = False
     #時間觸發事件(每100ms觸發一次)
@@ -232,32 +252,23 @@ while running:
             Count01 = 0
         if(Count02 == 15): #觸發Text產生
             randomWordsAngle()
-            print(randomText)
-            #textRect = Text[j].get_rect()
-            TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
             Count02 = 0
-            #修正文字到嘴巴的位置
-            TextPosition[0][0] -= 55
-            TextPosition[0][1] += 20
-        if(Count03 == 1):  #觸發enter動畫
-            if(enterBool):
-                Alpha -= 35 #淡出多快(越高越快)
-                multiply = 1.1 #放大多快(越高越快)
-                playerTextRect.width = math.floor(playerTextRect.width * multiply)
-                playerTextRect.height = math.floor(playerTextRect.height * multiply)
-                scaleVal = [math.floor(playerTextRect.width), math.floor(playerTextRect.height)]
-                playerText_enter.set_alpha(Alpha)
-                if(playerTextRect.width <= resolution[0] and playerTextRect.height <= resolution[1]):
-                    playerText_enter = pygame.transform.scale(playerText_enter, scaleVal)
-                    playerText_enterRect = playerText_enter.get_rect()
-            if(Alpha <= 0):
-                enterBool = False
-                Alpha = Alpha_origin
-            Count03 = 0
+        if(Count04 == 1):
+            if(holdBACK):
+                playerInput = playerInput[:-1] #刪一個字
+            Count04 = 0
+        if(monsterHPflag):
+            Count05 += 1
+            if(Count05 == 4):
+                monsterHPcolor = [255,255,255]
+                monsterHPflag = False
+                Count05 = 0
         lastTick = pygame.time.get_ticks()
         Count01 += 1
         Count02 += 1
         Count03 += 1
+        Count04 += 1
+
     #-------兩個背景輪流頂替---------#
     backgroundStart -= background_dx
     backgroundStart02 = backgroundStart + 1492
@@ -281,9 +292,28 @@ while running:
     if(holdRIGHT):
         if(heroRect.right<=1024):
             heroCenter[0] += hero_dx
+    if(holdBACK):
+        pass #刪一個字
     #--------------------------------------#
-
-    #按完Enter把字給render
+    #--------------按下enter的動畫-----------------#
+    if(enterBool):
+        Alpha -= 15 #淡出多快(越高越快)
+        multiply = 1.08 #放大多快(越高越快)
+        playerText_enter = playerText
+        playerTextRect.width = math.floor(playerTextRect.width * multiply)
+        playerTextRect.height = math.floor(playerTextRect.height * multiply)
+        scaleVal = [playerTextRect.width, playerTextRect.height]
+        if(playerTextColorFlag):
+            playerText_enter = Font.render(inputCache, 0, (0,150,180)) #答對的顏色
+        playerText_enter.set_alpha(Alpha)
+        if(playerTextRect.width <= resolution[0] and playerTextRect.height <= resolution[1]):
+            playerText_enter = pygame.transform.scale(playerText_enter, scaleVal)
+            playerText_enterRect = playerText_enter.get_rect()
+    if(Alpha <= 0):
+        enterBool = False
+        Alpha = Alpha_origin
+    #----------------------------------------------#
+    #----------中間顯示打甚麼字的Blit---------------#
     if(not enterBool):
         playerText = playerFont.render(playerInput, 0, (255,0,0))
         playerText.set_alpha(Alpha_origin)
@@ -293,35 +323,24 @@ while running:
         screen.blit(playerText, (X, Y))
     if(enterBool):
         playerText_enterRect = playerText_enter.get_rect()
-        screen.blit(playerText_enter, (math.floor(resolution[0]/2-playerText_enterRect.width/2), math.floor(resolution[1]/2-playerText_enterRect.height/2)))
+        X = math.floor(resolution[0]/2-playerTextRect.width/2)
+        Y = math.floor(resolution[1]/2-playerTextRect.height/2)
+        screen.blit(playerText_enter, (X, Y))
+    #-----------------------------------------------#
+    #----------monsterBilt-----------#
     #monster 移動&反彈
     monsterCenter[1] += monster_dy
     monsterRect.center = (monsterCenter)
     if (monsterRect.top<=0 or monsterRect.bottom>=screen.get_height()):
         monster_dy *= -1
-
     if(monsterMode): #monster圖1
         monsterPic = monster
     else: #monster圖2
         monsterPic = monsterChange
-
-    
-    #hitboxShift
-    leftShift = 25
-    rightShift = -72
-    topShift = 17
-    widthShift = rightShift - leftShift
-    heightShift = -topShift
-    '''
-    #HERO的Hitbox
-    RECTCOORD = [heroRect.left + leftShift, heroRect.top + topShift, heroWidth + widthShift , heroHeight + heightShift]
-    HEROhitbox = pygame.Rect(RECTCOORD)
-    pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
-    '''
-    #monsterBilt
     screen.blit(monsterPic,monsterRect.topleft)
-
+    #--------------------------------#
     #---------------------------------和文字有關的--------------------------------#
+    HIT = False
     if(len(Text) != 0): 
         #Text movement and blit(用掃描的概念)
         for i in Text: #i = 掃到的字
@@ -340,10 +359,7 @@ while running:
             Condition4 = (TextBottom >= heroRect.top + topShift and TextTop <= heroRect.top + topShift) #字在hero上面
             Condition5 = (TextBottom <= heroRect.bottom and TextTop >= heroRect.top + topShift) #字在hero上面和下面之間
             if((Condition0 or Condition1 or Condition2) and (Condition3 or Condition4 or Condition5)): #碰撞條件
-                heroHP -= 5 #扣的血量
-                if(heroHP <= 0):
-                    heroHP = 0
-                print('HIT')
+                HIT = True
             #字超過螢幕左邊就刪掉
             if (TextRight <= 0):
                 removeText(j,1)
@@ -354,11 +370,28 @@ while running:
             pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
             '''
             screen.blit(i, (TextPosition[j][0], TextPosition[j][1]))
-    #------------------------------------------------------------------------------#    
-    #HeroBilt
+    #------------------------------------------------------------------------------# 
+    #HeroBilt   
+    '''
+    #HERO的Hitbox
+    RECTCOORD = [heroRect.left + leftShift, heroRect.top + topShift, heroWidth + widthShift , heroHeight + heightShift]
+    HEROhitbox = pygame.Rect(RECTCOORD)
+    pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
+    '''
     heroRect.center = (heroCenter)
     screen.blit(hero,heroRect.topleft) #hero顯示
     #--------------------血條顯示----------------------#
+    heroHPcolor = [255,255,255]
+    #-----------被字撞到-----------#
+    if(HIT):
+        heroHP -= 5 #扣的血量
+        heroHPcolor = [255,0,0]
+        if(heroHP <= 0):
+            heroHP = 0
+        print('HIT')
+    #-----------------------------#
+    if(monsterHPflag):
+        monsterHPcolor = [255,0,0]
     #HeroHP裡面
     LEFT = heroRect.left
     TOP = heroRect.top - 17
@@ -370,7 +403,7 @@ while running:
     RECTCOORD = [LEFT, TOP, heroHPwidth+6, heroHPheight+6]
     heroHPrect1 = pygame.Rect(RECTCOORD)
     #先印裡面再印外框
-    pygame.draw.rect(screen, (255,255,255), heroHPrect2, 0)
+    pygame.draw.rect(screen, heroHPcolor, heroHPrect2, 0)
     pygame.draw.rect(screen, (0,0,0), heroHPrect1, 3)
     #monsterHP裡面
     LEFT = monsterRect.left + 7
@@ -383,14 +416,12 @@ while running:
     RECTCOORD = [LEFT, TOP, monsterHPwidth+6, monsterHPheight+6]
     monsterHPrect1 = pygame.Rect(RECTCOORD)
     #先印裡面再印外框
-    pygame.draw.rect(screen, (255,255,255), monsterHPrect2, 0)
+    pygame.draw.rect(screen, monsterHPcolor, monsterHPrect2, 0)
     pygame.draw.rect(screen, (0,0,0), monsterHPrect1, 3)
     #-----------------------------------------------------#
 
-    
-
     pygame.display.update()
-    if (len(Text) > 40): #字的數量超過10就pop掉一個
+    if (len(Text) > 40): #字的數量超過40就pop掉一個
         Text.pop()
         Text_dy.pop()
         TextPosition.pop()
