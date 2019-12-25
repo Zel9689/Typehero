@@ -4,7 +4,10 @@ import os
 import random
 import math
 #角色子彈動畫
-
+#角色射擊動作
+#角色連續移動
+#勝利 落敗畫面
+#輸入正確enter顏色不同
 
 
 #文字隨機出和隨機角度
@@ -55,7 +58,7 @@ def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
 
 #nonPygame side
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
-f = open(path + '\dictionary.txt','r') #開啟字典
+f = open(path + '/dictionary.txt','r') #開啟字典
 Dict = f.read()
 words = Dict.splitlines() #字的List
 wordsNum = len(words) #字的數量
@@ -109,6 +112,7 @@ heroChange = pygame.transform.scale(heroChange, (150,120)) #hero大小調整
 #heroPosition
 heroCenter = [0 + heroWidth/2, resolution[1]/2]
 hero_dy = 20 #按一下移動多少
+hero_dx = 20
 #player's bullet
 
 #Heor health
@@ -190,6 +194,12 @@ while running:
             elif event.key == pygame.K_DOWN:
                 if(heroRect.bottom <= screen.get_height()):
                     heroCenter[1] += hero_dy
+            elif event.key == pygame.K_LEFT:
+                if(heroRect.left>=0):
+                    heroCenter[0] -= hero_dx
+            elif event.key == pygame.K_RIGHT:
+                if(heroRect.right<=1024):
+                    heroCenter[0] += hero_dx
             else:
                 playerInput += event.unicode
                 enterBool = False
@@ -252,6 +262,21 @@ while running:
     else: #monster圖2
         screen.blit(monsterChange,monsterRect.topleft)
 
+    #Hero
+    heroRect.center = (heroCenter)
+    screen.blit(hero,heroRect.topleft) #hero顯示
+    #hitboxShift
+    leftShift = 25
+    rightShift = -72
+    topShift = 17
+    widthShift = rightShift - leftShift
+    heightShift = -topShift
+    '''
+    #HERO的Hitbox
+    RECTCOORD = [heroRect.left + leftShift, heroRect.top + topShift, heroWidth + widthShift , heroHeight + heightShift]
+    HEROrect1 = pygame.Rect(RECTCOORD)
+    pygame.draw.rect(screen, (0,0,0), HEROrect1, 3)
+    '''
     if(len(Text) != 0): #字
         #Text movement and blit(掃描的概念)
         for i in Text: #i = 掃到的字
@@ -261,12 +286,13 @@ while running:
             #------------------------------------------#
             TextWidth = i.get_rect()
             TextWidth = TextWidth.width
-            TextTop = TextPosition[j][1] 
+            TextTop = TextPosition[j][1] + 5
             TextBottom = TextPosition[j][1] + 20
             TextHeight = TextBottom - TextTop
             TextRight = TextPosition[j][0] + TextWidth
             TextLeft_x = TextPosition[j][0]
             TextLeft_y = TextPosition[j][1]
+            
             '''
             #Text的Hitbox
             RECTCOORD = [TextLeft_x, TextTop, TextWidth, TextHeight]
@@ -279,12 +305,14 @@ while running:
             TextPosition[j][1] += Text_dy[j]
             screen.blit(i, (TextPosition[j][0], TextPosition[j][1])) #字移動
             #碰到hero就扣血 monster加血
-            Condition0 = (TextLeft_x <= heroRect.right - 70) #字的左邊碰到hero
-            Condition1 = (TextTop <= heroRect.bottom and TextBottom >= heroRect.bottom) #字切到hero下面
-            Condition2 = (TextBottom >= heroRect.top and TextTop <= heroRect.top) #字切到hero上面
-            Condition3 = (TextBottom <= heroRect.bottom and TextTop >= heroRect.top) #字整個打到hero
-            if(Condition0 and (Condition1 or Condition2 or Condition3)):
-                heroHP -= 1
+            Condition0 = (TextLeft_x <= heroRect.right + rightShift and TextRight >= heroRect.right + rightShift) #字的左邊碰到hero
+            Condition1 = (TextLeft_x <= heroRect.left + leftShift and TextRight >= heroRect.left + leftShift)
+            Condition2 = (TextLeft_x >= heroRect.left + leftShift and TextRight <= heroRect.right + rightShift)
+            Condition3 = (TextTop <= heroRect.bottom and TextBottom >= heroRect.bottom) #字切到hero下面
+            Condition4 = (TextBottom >= heroRect.top + topShift and TextTop <= heroRect.top + topShift) #字切到hero上面
+            Condition5 = (TextBottom <= heroRect.bottom and TextTop >= heroRect.top + topShift) #字整個打到hero
+            if((Condition0 or Condition1 or Condition2) and (Condition3 or Condition4 or Condition5)):
+                heroHP -= 5
                 if(heroHP <= 0):
                     heroHP = 0
                 print('HIT')
@@ -292,15 +320,7 @@ while running:
             if (TextRight <= 0):
                 removeText(j,1)
             
-    #Hero
-    heroRect.center = (heroCenter)
-    screen.blit(hero,heroRect.topleft) #hero顯示
-    '''
-    #HERO的Hitbox
-    RECTCOORD = [heroRect.left, heroRect.top, heroWidth - 70, heroHeight]
-    HEROrect1 = pygame.Rect(RECTCOORD)
-    pygame.draw.rect(screen, (0,0,0), HEROrect1, 3)
-    '''
+    
     #HeroHP裡面
     LEFT = heroRect.left
     TOP = heroRect.top - 17
