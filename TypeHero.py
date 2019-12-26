@@ -6,10 +6,10 @@ import math
 #1 blit per frame
 #compare的for好像可以用if替代
 #讓字會往右彈
-#一樣的字用特別顏色
 #monster每隔一段時間變化移動方式
 #加血量有提示
 #沒辦法同時射兩顆
+#提示輸入enter繼續
 
 #全部調回預設值
 def gameReset():
@@ -90,7 +90,15 @@ def TextAttributes(i):
 def randomWordsAngle():
     randomText.insert(0, random.choice(words))
     Text.insert(0, Font.render(randomText[0], True, (255,255,255))) #在Text List插入隨機的字到index 0
-    Text_dy.insert(0, random.randint(-5,5)) #Text_dy -2~2 隨機 插入index 0
+    for i in range(len(randomText)):
+        TextColor = (255,255,255)
+        x = randomText.count(randomText[i])
+        if(x == 2):
+            TextColor = (0,0,255)
+        if(x >= 3):
+            TextColor = (255,0,0)
+        Text[i] = Font.render(randomText[i], True, (TextColor))
+    Text_dy.insert(0, random.randint(-5,5)) #Text_dy -5~5 隨機 插入index 0
     print(randomText)
     TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
     #修正文字到嘴巴的位置
@@ -295,9 +303,17 @@ while running:
                 elif event.key == pygame.K_RIGHT:
                     holdRIGHT = True
                 elif event.key == (pygame.K_LCTRL):
+                    if(changeDirect):
+                        changeDirect = False
+                    elif(not changeDirect):
+                        changeDirect = True
+                    hitboxShift()
                     hero = pygame.transform.flip(hero, True, False)
                     heroChange = pygame.transform.flip(heroChange, True, False)
                     heroPic = pygame.transform.flip(heroPic, True, False)
+                    bullet = pygame.transform.flip(bullet, True, False)
+                    bullet02 = pygame.transform.flip(bullet02, True, False)
+                    bullet03 = pygame.transform.flip(bullet03, True, False)
             elif(heroHP == 0):
                 pass
             else:
@@ -356,7 +372,7 @@ while running:
         if(Count01 == 5): #觸發換monster圖片
             monsterMode = not monsterMode
             Count01 = 0
-        if(Count02 == 15 and monsterHP != 0): #觸發Text產生
+        if(Count02 == 10 and monsterHP != 0): #觸發Text產生
             randomWordsAngle()
             Count02 = 0
         if(enterBool02): #按enter的動畫
@@ -475,12 +491,12 @@ while running:
             #字超過螢幕左邊就刪掉
             if (TextRight <= 0):
                 removeText(j,1)
-            '''
+            
             #Text的Hitbox
             RECTCOORD = [TextLeft_x, TextTop, TextWidth, TextHeight]
             TEXThitbox = pygame.Rect(RECTCOORD)
             pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
-            '''
+            
     #----------------------------------------------------------------------------# 
     #----------HeroBlit-----------# 
     heroRect.center = (heroCenter)
