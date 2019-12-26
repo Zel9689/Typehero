@@ -8,7 +8,7 @@ import math
 
 #全部調回預設值
 def gameReset():
-    global gameStart, gameOver, running, monsterMode, monsterHPflag, heroBulletFlag\
+    global gameStart, gameOver, running, monsterMode, heroBulletFlag\
         , Count01, Count02, Count03, Count04, Count05\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dy, flag_success, enterBool, enterBool02\
                 , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset
@@ -17,7 +17,6 @@ def gameReset():
     gameOver = False #遊戲結束
     running = True #視窗執行中
     monsterMode = True #monster哪一張圖片
-    monsterHPflag = False #monster血的顏色 True = 紅色
     heroBulletFlag = False #子彈一開始沒出現
     Count01 = 0 #monster換圖片的counter
     Count02 = 0 #Text的counter
@@ -73,30 +72,25 @@ def randomWordsAngle():
 
 #比較打對哪個字的函式
 def compare():
-    global monsterHP, heroHP, monsterHPflag, playerTextColorFlag, heroBulletFlag, removeNum
+    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, removeNum
     flag_success = False
-    monsterHPflag = flag_success
     playerTextColorFlag = flag_success
     heroBulletFlag = flag_success
     for i in randomText:
         if(playerInput == i): #成功打入一樣的字母
             flag_success = True
-            monsterHPflag = flag_success
             playerTextColorFlag = flag_success
             heroBulletFlag = flag_success
             j = randomText.index(i)
             removeNum = removeText(j,0)
-            monsterHP -= removeNum*5 #消一個monster扣5HP
             heroHP += removeNum*5 #消一個hero加5HP
             if(heroHP > heroHP_origin):
                 heroHP = heroHP_origin
-            if(monsterHP < 0): #HP不能低於0
-                monsterHP = 0
             print(removeNum)
             print('你打對',playerInput,'了')
             print(monsterHP)
     if(not flag_success):#沒打對的話
-        monsterHP += 5 #monster加血
+        monsterHP += 10 #monster加血
         if(monsterHP > monsterHP_origin):
             monsterHP = monsterHP_origin
 
@@ -314,12 +308,6 @@ while running:
                 playerInput = playerInput[:-1] #刪一個字
         if(not holdBACK):
             Count04 = 0
-        if(monsterHPflag):
-            Count05 += 1
-            if(Count05 == 4):
-                monsterHPcolor = [255,255,255]
-                monsterHPflag = False
-                Count05 = 0
         lastTick = pygame.time.get_ticks()
         Count01 += 1
         Count02 += 1
@@ -456,7 +444,16 @@ while running:
     bulletRect.center = bulletCenter
     #-----------------------------#
     #----------看是否擊中monster------------#
-
+    HIT_monster = False
+    Condition6 = (bulletRect.left <= monsterRect.right + rightShift and bulletRect.right >= monsterRect.right + rightShift) #字在hero右邊
+    Condition7 = (bulletRect.left <= monsterRect.left + leftShift and bulletRect.right >= monsterRect.left + leftShift) #字在hero左邊
+    Condition8 = (bulletRect.left >= monsterRect.left + leftShift and bulletRect.right <= monsterRect.right + rightShift) #字在hero右邊和左邊之間
+    Condition9 = (bulletRect.top <= monsterRect.bottom and bulletRect.bottom >= monsterRect.bottom) #字在hero下面
+    Condition10 = (bulletRect.bottom >= monsterRect.top + topShift and bulletRect.top <= monsterRect.top + topShift) #字在hero上面
+    Condition11 = (bulletRect.bottom <= monsterRect.bottom and bulletRect.top >= monsterRect.top + topShift) #字在hero上面和下面之間
+    if(heroBulletFlag):
+        if((Condition6 or Condition7 or Condition8) and (Condition9 or Condition10 or Condition11)): #碰撞條件
+            HIT_monster = True
     #--------------------血條顯示------------------------------------------------#
     heroHPcolor = [255,255,255]
     monsterHPcolor = [255,255,255]
@@ -467,8 +464,12 @@ while running:
         if(heroHP <= 0):
             heroHP = 0
         print('HIT')
-    if(monsterHPflag):
+    if(HIT_monster):
+        monsterHP -= removeNum*2 #消一個monster扣5HP
         monsterHPcolor = [255,0,0]
+        if(monsterHP <= 0):
+            monsterHP = 0
+        print('HIT_monster')
     #-------------------#
     #HeroHP裡面
     LEFT = heroRect.left
