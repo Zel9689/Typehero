@@ -4,11 +4,13 @@ import os
 import random
 import math
 #1 blit per frame
+#compare的for好像可以用if替代
+#死亡用enter當繼續
 
 #全部調回預設值
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag\
-        , Count01, Count02, Count03, Count04, Count05\
+        , Count01, Count02, Count03, Count04, Count05, Count_bullet\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
                 , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset
     #Before Loop
@@ -38,11 +40,14 @@ def gameReset():
     monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
     monster_dy = monster_origin
     monster_dx = monster_origin
+    Count_bullet = 0
     hitboxShift()
     Text.clear()
     Text_dy.clear()
     TextPosition.clear()
     randomText.clear()
+    bulletArray.clear()
+    bulletCenter_cache.clear()
     randomWordsAngle() #先產生一個字
 
 #hitboxShift
@@ -88,17 +93,27 @@ def randomWordsAngle():
 
 #比較打對哪個字的函式
 def compare():
-    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, removeNum
+    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, heroBulletFlag02, removeNum
     flag_success = False
     playerTextColorFlag = flag_success
     heroBulletFlag = flag_success
-    for i in randomText:
+    heroBulletFlag02 = flag_success
+    for i in randomText: 
         if(playerInput == i): #成功打入一樣的字母
             flag_success = True
             playerTextColorFlag = flag_success
             heroBulletFlag = flag_success
+            heroBulletFlag02 = flag_success
             j = randomText.index(i)
             removeNum = removeText(j,0)
+            if(removeNum == 1):
+                bulletPic = bullet
+            elif(removeNum == 2):
+                bulletPic = bullet02
+            elif(removeNum >= 3):
+                bulletPic = bullet03
+            bulletArray.insert(0, bulletPic) #加一顆子彈圖片到Array
+            bulletCenter_cache.insert(0, bulletCenter) #加子彈位置到Array
             heroHP += removeNum*5 #消一個hero加5HP
             if(heroHP > heroHP_origin):
                 heroHP = heroHP_origin
@@ -189,13 +204,15 @@ moveSpeed = 10 #按一下移動多少
 hero_dy = moveSpeed 
 hero_dx = moveSpeed
 #hero's bullet
+bulletArray = [] #存三種bulletPic
+bulletRect = [] #存三個bullet矩形(最後指定位置用)
+bulletCenter_cache = [] #存正在飛的bullet位置
 bullet = pygame.image.load(os.path.join(path, 'hero_bullet01.png'))
 bullet = bullet.convert_alpha()
 bullet = pygame.transform.scale(bullet, (60,50)) #bullet大小調整
-bulletRect = bullet.get_rect()
-bulletHeight = bulletRect.height
-bulletWidth = bulletRect.width
 bulletPic = bullet
+for i in range(4): #弄4個一樣的Rect
+    bulletRect.append(bullet.get_rect())
 #hero's bullet02
 bullet02 = pygame.image.load(os.path.join(path, 'hero_bullet02.png'))
 bullet02 = bullet02.convert_alpha()
@@ -292,9 +309,10 @@ while running:
                     hero = pygame.transform.flip(hero, True, False)
                     heroChange = pygame.transform.flip(heroChange, True, False)
                     heroPic = pygame.transform.flip(heroPic, True, False)
-                    bullet = pygame.transform.flip(bullet, True, False)
-                    bullet02 = pygame.transform.flip(bullet02, True, False)
-                    bullet03 = pygame.transform.flip(bullet03, True, False)
+                    if(not heroBulletFlag): #上一顆子彈還在飛
+                        bullet = pygame.transform.flip(bullet, True, False)
+                        bullet02 = pygame.transform.flip(bullet02, True, False)
+                        bullet03 = pygame.transform.flip(bullet03, True, False)
                 else:
                     playerInput += event.unicode
                     enterBool = False
@@ -455,42 +473,48 @@ while running:
     pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
 
     #-----------------------------#
-    #---------Bullet飛行----------#
-    if(not heroBulletFlag):
-        bulletCenter = [heroCenter[0] + 60, heroCenter[1] + 4]
-    if(heroBulletFlag):
-        if(removeNum == 1):
-            bulletPic = bullet
-        elif(removeNum == 2):
-            bulletPic = bullet02
-        elif(removeNum == 3):
-            bulletPic = bullet03
-        if(bulletRect.left <= resolution[0]):
-            if(changeDirect):
-                bulletCenter[0] -= 50
-            else:
-                bulletCenter[0] += 50
-        else:
-            heroBulletFlag = False
-        screen.blit(bulletPic,bulletRect.topleft)
-    bulletRect.center = bulletCenter
-    #-----------------------------#
-    #----------看是否擊中monster------------#
+    #-------------------------------------------------Bullet飛行---------------------------------------------------#
+    #平常子彈一直追蹤英雄位置
+    if(not changeDirect):
+        bulletCenter = [heroCenter[0] + 100, heroCenter[1] + 4]
+    elif(changeDirect):
+        bulletCenter = [heroCenter[0] - 100, heroCenter[1] + 4]
+    #掃描顯示
     HIT_monster = False
-    Condition6 = (bulletRect.left <= monsterRect.right + rightShift and bulletRect.right >= monsterRect.right + rightShift) #字在hero右邊
-    Condition7 = (bulletRect.left <= monsterRect.left + leftShift and bulletRect.right >= monsterRect.left + leftShift) #字在hero左邊
-    Condition8 = (bulletRect.left >= monsterRect.left + leftShift and bulletRect.right <= monsterRect.right + rightShift) #字在hero右邊和左邊之間
-    Condition9 = (bulletRect.top <= monsterRect.bottom and bulletRect.bottom >= monsterRect.bottom) #字在hero下面
-    Condition10 = (bulletRect.bottom >= monsterRect.top + topShift and bulletRect.top <= monsterRect.top + topShift) #字在hero上面
-    Condition11 = (bulletRect.bottom <= monsterRect.bottom and bulletRect.top >= monsterRect.top + topShift) #字在hero上面和下面之間
-    if(heroBulletFlag):
-        if((Condition6 or Condition7 or Condition8) and (Condition9 or Condition10 or Condition11)): #碰撞條件
-            HIT_monster = True
+    for i in bulletArray:
+        j = bulletArray.index(i)
+        bulletRect[j].center = bulletCenter_cache[j]
+    #----------看是否擊中monster------------#
+        Condition6 = (bulletRect[j].left <= monsterRect.right + rightShift and bulletRect[j].right >= monsterRect.right + rightShift) #字在hero右邊
+        Condition7 = (bulletRect[j].left <= monsterRect.left + leftShift and bulletRect[j].right >= monsterRect.left + leftShift) #字在hero左邊
+        Condition8 = (bulletRect[j].left >= monsterRect.left + leftShift and bulletRect[j].right <= monsterRect.right + rightShift) #字在hero右邊和左邊之間
+        Condition9 = (bulletRect[j].top <= monsterRect.bottom and bulletRect[j].bottom >= monsterRect.bottom) #字在hero下面
+        Condition10 = (bulletRect[j].bottom >= monsterRect.top + topShift and bulletRect[j].top <= monsterRect.top + topShift) #字在hero上面
+        Condition11 = (bulletRect[j].bottom <= monsterRect.bottom and bulletRect[j].top >= monsterRect.top + topShift) #字在hero上面和下面之間
+        if(heroBulletFlag):
+            if((Condition6 or Condition7 or Condition8) and (Condition9 or Condition10 or Condition11)): #碰撞條件
+                HIT_monster = True
+            if(changeDirect):
+                if(bulletCenter_cache[j][0] >= 0): #讓位置1的子彈位移
+                    bulletCenter_cache[j][0] -= 50
+                else:
+                    heroBulletFlag = False
+                    bulletArray.pop(j)
+                    bulletCenter_cache.pop(j)
+            else:
+                if(bulletCenter_cache[j][0] <= resolution[0]): #讓位置1的子彈位移
+                    bulletCenter_cache[j][0] += 50
+                else:
+                    heroBulletFlag = False
+                    bulletArray.pop(j)
+                    bulletCenter_cache.pop(j)
+        screen.blit(i ,bulletRect[j].topleft)
+    #---------------------------------------------------------------------------------------------------------------#
     #--------------------血條顯示------------------------------------------------#
     heroHPcolor = [255,255,255]
     monsterHPcolor = [255,255,255]
     #-------扣血--------#
-    if(HIT):
+    if(HIT and not gameOver and not gameStart):
         heroHP -= 5 #扣的血量
         heroHPcolor = [255,0,0]
         if(heroHP <= 0):
@@ -531,15 +555,15 @@ while running:
     pygame.draw.rect(screen, (0,0,0), monsterHPrect1, 3)
     #------------------------------------------------------------------------------#
     #---------遊戲訊息-----------#
-    messageColor = [0,255,0]
-    if(gameStart):
+    messageColor = [248,210,34] #訊息顏色
+    if(gameStart): #遊戲開始訊息
         gameMessage = 'Press any key to START'
         needMessage = True
-    if(monsterHP == 0):
+    if(monsterHP == 0): #WIN的訊息
         gameMessage = 'YOU WIN'
         needMessage = True
         gameOver = True
-    if(heroHP == 0):
+    if(heroHP == 0): #LOSE的訊息
         gameMessage = 'YOU ARE DEAD'
         needMessage = True
         gameOver = True
@@ -549,7 +573,7 @@ while running:
             gameTextRect = gameText.get_rect()
             scaleVal = (math.floor(gameTextRect.width * 0.6), math.floor(gameTextRect.height * 0.6))
             gameText = pygame.transform.scale(gameText, scaleVal)
-        gameText.set_alpha(125)
+        gameText.set_alpha(230) #設定訊息透明度
         gameTextRect = gameText.get_rect()
         X = math.floor(resolution[0]/2-gameTextRect.width/2)
         Y = math.floor(resolution[1]/2-gameTextRect.height/2)
@@ -557,7 +581,7 @@ while running:
         screen.blit(gameText, gameTextRect.topleft)
         RECTCOORD = [gameTextRect.left - 10, gameTextRect.top - 5, gameTextRect.width + 20, gameTextRect.height + 10]
         MESSAGErect1 = pygame.Rect(RECTCOORD)
-        pygame.draw.rect(screen, (0,150,0), MESSAGErect1, 9)
+        pygame.draw.rect(screen, (248,210,34), MESSAGErect1, 6) #外框顏色
     if(reset):
         gameReset()
 
@@ -570,6 +594,5 @@ while running:
         Text.pop()
         Text_dy.pop()
         TextPosition.pop()
-    
 pygame.font.quit()
 pygame.quit()
