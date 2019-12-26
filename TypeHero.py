@@ -6,11 +6,9 @@ import math
 #1 blit per frame
 #讓字會往右彈 done
 #monster每隔一段時間變化移動方式
-#碰到monster會扣血
 #加血量有提示
 #沒辦法同時射兩顆
 #提示輸入enter繼續
-#改字大小hitbox會跑掉
 
 #全部調回預設值
 def gameReset():
@@ -73,26 +71,11 @@ def hitboxShift():
         topShift = 17
         widthShift = rightShift - leftShift
         heightShift = -topShift
-#text的rect.top rect.bottom怪怪的，只好手動調整每個數值
-def TextAttributes(i):
-    global TextWidth, TextTop, TextBottom, TextHeight, TextRight, TextLeft
-    j = Text.index(i) #j = 那個字的index
-    TextWidth = i.get_rect()
-    Texttest = TextWidth.height
-    TextWidth = TextWidth.width
-    TextTop = TextPosition[j][1] + 5
-    TextBottom = TextPosition[j][1] + 20
-    TextHeight = TextBottom - TextTop
-    TextRight = TextPosition[j][0] + TextWidth
-    TextLeft = TextPosition[j][0]
-    #print(Texttest, TextHeight)
-    #---------------------------------------------------#
-    return j
 
 #文字隨機出和隨機角度
 def randomWordsAngle():
     randomText.insert(0, random.choice(words))
-    Text.insert(0, Font.render(randomText[0], True, (255,255,255))) #在Text List插入隨機的字到index 0
+    Text.insert(0, Font.render(randomText[0], False, (255,255,255))) #在Text List插入隨機的字到index 0
     for i in range(len(randomText)):
         TextColor = (255,255,255)
         x = randomText.count(randomText[i])
@@ -100,9 +83,9 @@ def randomWordsAngle():
             TextColor = (0,0,255)
         if(x >= 3):
             TextColor = (255,0,0)
-        Text[i] = Font.render(randomText[i], True, (TextColor))
-    Text_dx.insert(0, random.randint(-5,5)) #Text_dx -5~5 隨機 插入index 0
-    Text_dy.insert(0, random.randint(-5,5)) #Text_dy -5~5 隨機 插入index 0
+        Text[i] = Font.render(randomText[i], False, (TextColor))
+    Text_dx.insert(0, random.randint(-6,6)) #Text_dx m~n 隨機 插入index 0
+    Text_dy.insert(0, random.randint(-6,6)) #Text_dy m~n 隨機 插入index 0
     print(randomText)
     TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
     #修正文字到嘴巴的位置
@@ -194,7 +177,8 @@ backgroundStart02 = backgroundStart + 1492
 
 #words
 fontLocation = Pyfont.match_font('Minecraft Regular')
-Font = Pyfont.Font(fontLocation, 20)
+FontSize = 30
+Font = Pyfont.Font(fontLocation, FontSize)
 playerFont = Pyfont.Font(fontLocation, 100)
 playerInput = ''
 Alpha_origin = 175 #玩家輸入字的透明度(255不透明)
@@ -202,8 +186,6 @@ Alpha = Alpha_origin
 playerText = Font.render(playerInput, True, (255,0,0))
 playerTextRect = playerText.get_rect()
 TextPosition = []
-for i in range(10):
-    TextPosition.append(2*[0])
 
 #hero picture
 hero = pygame.image.load(os.path.join(path, 'hero01.png'))
@@ -496,34 +478,36 @@ while running:
     if(len(Text) != 0): 
         #Text movement and blit(用掃描的概念)
         for i in Text: #i = 掃到的字
-            j = TextAttributes(i)
-            #Text的Hitbox
-            RECTCOORD = [TextLeft, TextTop, TextWidth, TextHeight]
-            TEXThitbox = pygame.Rect(RECTCOORD)
-            pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
-            #碰到hero就扣血
-            Condition0 = (TextLeft <= heroRect.right + rightShift and TextRight >= heroRect.right + rightShift) #字在hero右邊
-            Condition1 = (TextLeft <= heroRect.left + leftShift and TextRight >= heroRect.left + leftShift) #字在hero左邊
-            Condition2 = (TextLeft >= heroRect.left + leftShift and TextRight <= heroRect.right + rightShift) #字在hero右邊和左邊之間
-            Condition3 = (TextTop <= heroRect.bottom and TextBottom >= heroRect.bottom) #字在hero下面
-            Condition4 = (TextBottom >= heroRect.top + topShift and TextTop <= heroRect.top + topShift) #字在hero上面
-            Condition5 = (TextBottom <= heroRect.bottom and TextTop >= heroRect.top + topShift) #字在hero上面和下面之間
-            if((Condition0 or Condition1 or Condition2) and (Condition3 or Condition4 or Condition5)): #碰撞條件
-                HIT = True
-            screen.blit(i, (TextPosition[j][0], TextPosition[j][1]))
-            #字反彈
-            if (TextTop <= 0 or TextBottom >= screen.get_height()):
-                Text_dy[j] *= -1
+            j = Text.index(i)
+            TextRect = i.get_rect()
             #字移動
             TextPosition[j][0] += Text_dx[j]
             TextPosition[j][1] += Text_dy[j]
+            TextRect.center = TextPosition[j] #TextCenter更新回去Text真的位置
+            #Text的Hitbox
+            RECTCOORD = [TextRect.left, TextRect.top, TextRect.width, TextRect.height]
+            TEXThitbox = pygame.Rect(RECTCOORD)
+            pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
+            #碰到hero就扣血
+            Condition0 = (TextRect.left <= heroRect.right + rightShift and TextRect.right >= heroRect.right + rightShift) #字在hero右邊
+            Condition1 = (TextRect.left <= heroRect.left + leftShift and TextRect.right >= heroRect.left + leftShift) #字在hero左邊
+            Condition2 = (TextRect.left >= heroRect.left + leftShift and TextRect.right <= heroRect.right + rightShift) #字在hero右邊和左邊之間
+            Condition3 = (TextRect.top <= heroRect.bottom and TextRect.bottom >= heroRect.bottom) #字在hero下面
+            Condition4 = (TextRect.bottom >= heroRect.top + topShift and TextRect.top <= heroRect.top + topShift) #字在hero上面
+            Condition5 = (TextRect.bottom <= heroRect.bottom and TextRect.top >= heroRect.top + topShift) #字在hero上面和下面之間
+            if((Condition0 or Condition1 or Condition2) and (Condition3 or Condition4 or Condition5)): #碰撞條件
+                HIT = True
+            screen.blit(i, (TextRect.topleft))
+            #字反彈
+            if (TextRect.top <= 0 or TextRect.bottom >= resolution[1]):
+                Text_dy[j] *= -1
             #字超過螢幕左邊就刪掉
-            if (TextRight <= 0):
+            if (TextRect.right <= 0):
                 removeText(j,1)
-            elif (TextLeft >= resolution[0]):
+            elif (TextRect.left >= resolution[0]):
                 removeText(j,1)
     #----------------------------------------------------------------------------# 
-    #----------HeroBlit-----------# 
+    #----------heroBlit-----------# 
     heroRect.center = (heroCenter)
     screen.blit(heroPic,heroRect.topleft)
 
