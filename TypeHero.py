@@ -3,12 +3,12 @@ import pygame.font as Pyfont
 import os
 import random
 import math
-#角色子彈動畫
+#判斷子彈是否打中
 #1 blit per frame
 
 #全部調回預設值
 def gameReset():
-    global gameStart, gameOver, running, monsterMode, monsterHPflag\
+    global gameStart, gameOver, running, monsterMode, monsterHPflag, heroBulletFlag\
         , Count01, Count02, Count03, Count04, Count05\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dy, flag_success, enterBool, enterBool02\
                 , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset
@@ -18,6 +18,7 @@ def gameReset():
     running = True #視窗執行中
     monsterMode = True #monster哪一張圖片
     monsterHPflag = False #monster血的顏色 True = 紅色
+    heroBulletFlag = False #子彈一開始沒出現
     Count01 = 0 #monster換圖片的counter
     Count02 = 0 #Text的counter
     Count03 = 0 #Enter按下後動畫的counter
@@ -72,16 +73,17 @@ def randomWordsAngle():
 
 #比較打對哪個字的函式
 def compare():
-    global monsterHP, heroHP, monsterHPflag, playerTextColorFlag
+    global monsterHP, heroHP, monsterHPflag, playerTextColorFlag, heroBulletFlag, removeNum
     flag_success = False
     monsterHPflag = flag_success
     playerTextColorFlag = flag_success
-    IsItPassedIF = 0
+    heroBulletFlag = flag_success
     for i in randomText:
         if(playerInput == i): #成功打入一樣的字母
             flag_success = True
             monsterHPflag = flag_success
             playerTextColorFlag = flag_success
+            heroBulletFlag = flag_success
             j = randomText.index(i)
             removeNum = removeText(j,0)
             monsterHP -= removeNum*5 #消一個monster扣5HP
@@ -93,7 +95,6 @@ def compare():
             print(removeNum)
             print('你打對',playerInput,'了')
             print(monsterHP)
-            IsItPassedIF += 1
     if(not flag_success):#沒打對的話
         monsterHP += 5 #monster加血
         if(monsterHP > monsterHP_origin):
@@ -178,15 +179,35 @@ moveSpeed = 10 #按一下移動多少
 hero_dy = moveSpeed 
 hero_dx = moveSpeed
 #hero's bullet
-
-#Heor health
+bullet = pygame.image.load(os.path.join(path, 'hero_bullet01.png'))
+bullet = bullet.convert_alpha()
+bullet = pygame.transform.scale(bullet, (60,50)) #bullet大小調整
+bulletRect = bullet.get_rect()
+bulletHeight = bulletRect.height
+bulletWidth = bulletRect.width
+bulletPic = bullet
+#hero's bullet02
+bullet02 = pygame.image.load(os.path.join(path, 'hero_bullet02.png'))
+bullet02 = bullet02.convert_alpha()
+bullet02 = pygame.transform.scale(bullet02, (100,56)) #bullet02大小調整
+bullet02Rect = bullet02.get_rect()
+bullet02Height = bullet02Rect.height
+bullet02Width = bullet02Rect.width
+#hero's bullet03
+bullet03 = pygame.image.load(os.path.join(path, 'hero_bullet03.png'))
+bullet03 = bullet03.convert_alpha()
+bullet03 = pygame.transform.scale(bullet03, (100,56)) #bullet03大小調整
+bullet03Rect = bullet03.get_rect()
+bullet03Height = bullet03Rect.height
+bullet03Width = bullet03Rect.width
+#Hero health
 heroHP_origin = 500
 heroHP = heroHP_origin
 heroHPheight = 10
 heroHPwidth = 125
 
 #monsters picture
-monster = pygame.image.load(os.path.join(path, 'monster01.png'))
+monster = pygame.image.load(os.path.join(path, 'monster02.png'))
 monster = monster.convert_alpha()
 monster = pygame.transform.scale(monster, (200,180)) #monster大小調整
 monsterRect = monster.get_rect()
@@ -194,7 +215,7 @@ monsterHeight = monsterRect.height
 monsterWidth = monsterRect.width
 monsterPic = monster
 #monsters pictrue_b
-monsterChange = pygame.image.load(os.path.join(path, 'monster01_b.png'))
+monsterChange = pygame.image.load(os.path.join(path, 'monster02_b.png'))
 monsterChange = monsterChange.convert_alpha()
 monsterChange = pygame.transform.scale(monsterChange, (200,180)) #monster大小調整
 #monsterPosition
@@ -329,7 +350,7 @@ while running:
     if(holdBACK):
         pass #刪一個字
     #--------------------------------------#
-    #--------------按下enter的動畫-----------------#
+    #--------------按下enter字的動畫-----------------#
     if(enterBool):
         Alpha -= 15 #淡出多快(越高越快)
         multiply = 1.08 #放大多快(越高越快)
@@ -417,6 +438,25 @@ while running:
     heroRect.center = (heroCenter)
     screen.blit(heroPic,heroRect.topleft)
     #-----------------------------#
+    #---------Bullet飛行----------#
+    if(not heroBulletFlag):
+        bulletCenter = [heroCenter[0] + 60, heroCenter[1] + 4]
+    if(heroBulletFlag):
+        if(removeNum == 1):
+            bulletPic = bullet
+        elif(removeNum == 2):
+            bulletPic = bullet02
+        elif(removeNum == 3):
+            bulletPic = bullet03
+        if(bulletRect.left <= resolution[0]):
+            bulletCenter[0] += 50
+        else:
+            heroBulletFlag = False
+        screen.blit(bulletPic,bulletRect.topleft)
+    bulletRect.center = bulletCenter
+    #-----------------------------#
+    #----------看是否擊中monster------------#
+
     #--------------------血條顯示------------------------------------------------#
     heroHPcolor = [255,255,255]
     monsterHPcolor = [255,255,255]
