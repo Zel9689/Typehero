@@ -3,7 +3,6 @@ import pygame.font as Pyfont
 import os
 import random
 import math
-#monster can move X-axis
 #1 blit per frame
 
 #全部調回預設值
@@ -11,7 +10,7 @@ def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag\
         , Count01, Count02, Count03, Count04, Count05\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
-                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, changeDirect
+                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset
     #Before Loop
     gameStart = True #遊戲開始
     gameOver = False #遊戲結束
@@ -28,7 +27,6 @@ def gameReset():
     holdLEFT = False
     holdRIGHT = False
     holdBACK = False
-    changeDirect = False
     flag_success = False #是否有打對
     enterBool = False #是否按下enter
     enterBool02 =False 
@@ -248,6 +246,7 @@ lastTick = 0
 
 
 #BeforeLoop
+changeDirect = False
 gameReset()
 #Loop
 while running:
@@ -284,13 +283,18 @@ while running:
                     holdLEFT = True
                 elif event.key == pygame.K_RIGHT:
                     holdRIGHT = True
-                elif event.key == (pygame.K_LCTRL or pygame.K_RCTRL):
+                elif event.key == (pygame.K_LCTRL):
                     if(changeDirect):
                         changeDirect = False
                     elif(not changeDirect):
                         changeDirect = True
                     hitboxShift()
+                    hero = pygame.transform.flip(hero, True, False)
+                    heroChange = pygame.transform.flip(heroChange, True, False)
                     heroPic = pygame.transform.flip(heroPic, True, False)
+                    bullet = pygame.transform.flip(bullet, True, False)
+                    bullet02 = pygame.transform.flip(bullet02, True, False)
+                    bullet03 = pygame.transform.flip(bullet03, True, False)
                 else:
                     playerInput += event.unicode
                     enterBool = False
@@ -315,7 +319,7 @@ while running:
         if(Count02 == 15 and monsterHP != 0): #觸發Text產生
             randomWordsAngle()
             Count02 = 0
-        if(enterBool02):
+        if(enterBool02): #按enter的動畫
             Count03 += 1
             if(Count03 == 1):
                 heroPic = heroChange
@@ -462,7 +466,10 @@ while running:
         elif(removeNum == 3):
             bulletPic = bullet03
         if(bulletRect.left <= resolution[0]):
-            bulletCenter[0] += 50
+            if(changeDirect):
+                bulletCenter[0] -= 50
+            else:
+                bulletCenter[0] += 50
         else:
             heroBulletFlag = False
         screen.blit(bulletPic,bulletRect.topleft)
