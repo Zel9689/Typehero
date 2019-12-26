@@ -5,14 +5,18 @@ import random
 import math
 #1 blit per frame
 #compare的for好像可以用if替代
-#死亡用enter當繼續
+#讓字會往右彈
+#一樣的字用特別顏色
+#monster每隔一段時間變化移動方式
+#加血量有提示
+#沒辦法同時射兩顆
 
 #全部調回預設值
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag\
         , Count01, Count02, Count03, Count04, Count05, Count_bullet\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
-                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset
+                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, hero_dx, hero_dy
     #Before Loop
     gameStart = True #遊戲開始
     gameOver = False #遊戲結束
@@ -38,8 +42,10 @@ def gameReset():
     monsterHP = monsterHP_origin
     heroCenter = [math.floor(resolution[0]/3), math.floor(resolution[1]/2)]
     monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
-    monster_dy = monster_origin
-    monster_dx = monster_origin
+    monster_dy = monster_moveSpeed
+    monster_dx = monster_moveSpeed
+    hero_dx = hero_moveSpeed
+    hero_dy = hero_moveSpeed
     Count_bullet = 0
     hitboxShift()
     Text.clear()
@@ -84,7 +90,7 @@ def TextAttributes(i):
 def randomWordsAngle():
     randomText.insert(0, random.choice(words))
     Text.insert(0, Font.render(randomText[0], True, (255,255,255))) #在Text List插入隨機的字到index 0
-    Text_dy.insert(0, random.randint(-2,2)) #Text_dy -2~2 隨機 插入index 0
+    Text_dy.insert(0, random.randint(-5,5)) #Text_dy -2~2 隨機 插入index 0
     print(randomText)
     TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
     #修正文字到嘴巴的位置
@@ -200,9 +206,9 @@ herorChange = heroChange.convert_alpha()
 heroChange = pygame.transform.scale(heroChange, (150,120)) #hero大小調整
 #heroPosition
 heroCenter = [math.floor(resolution[0]/3), math.floor(resolution[1]/2)]
-moveSpeed = 10 #按一下移動多少
-hero_dy = moveSpeed 
-hero_dx = moveSpeed
+hero_moveSpeed = 10 #按一下移動多少
+hero_dy = hero_moveSpeed 
+hero_dx = hero_moveSpeed
 #hero's bullet
 bulletArray = [] #存三種bulletPic
 bulletRect = [] #存三個bullet矩形(最後指定位置用)
@@ -247,9 +253,9 @@ monsterChange = monsterChange.convert_alpha()
 monsterChange = pygame.transform.scale(monsterChange, (200,180)) #monster大小調整
 #monsterPosition
 monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
-monster_origin = 3 #移動速度
-monster_dy = monster_origin
-monster_dx = monster_origin
+monster_moveSpeed = 5 #移動速度
+monster_dy = monster_moveSpeed
+monster_dx = monster_moveSpeed
 #monsters HP
 monsterHP_origin = 100
 monsterHP = monsterHP_origin
@@ -272,17 +278,42 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if(gameStart):
+                gameReset()
                 gameStart = False
                 needMessage = False
-            elif(gameOver):
+            elif(gameOver and event.key == pygame.K_RETURN):
                 gameOver = False
                 needMessage = False
                 reset = True
+            elif(monsterHP == 0):
+                if event.key == pygame.K_UP:
+                    holdUP = True
+                elif event.key == pygame.K_DOWN:
+                    holdDOWN = True
+                elif event.key == pygame.K_LEFT:
+                    holdLEFT = True
+                elif event.key == pygame.K_RIGHT:
+                    holdRIGHT = True
+                elif event.key == (pygame.K_LCTRL):
+                    hero = pygame.transform.flip(hero, True, False)
+                    heroChange = pygame.transform.flip(heroChange, True, False)
+                    heroPic = pygame.transform.flip(heroPic, True, False)
+            elif(heroHP == 0):
+                pass
             else:
-                if event.key == pygame.K_RETURN:
+                if event.key == pygame.K_UP:
+                    holdUP = True
+                elif event.key == pygame.K_DOWN:
+                    holdDOWN = True
+                elif event.key == pygame.K_LEFT:
+                    holdLEFT = True
+                elif event.key == pygame.K_RIGHT:
+                    holdRIGHT = True
+                elif event.key == pygame.K_RETURN:
                     compare() #比較有沒有打一樣的
                     enterBool = True #給打字特效的
                     enterBool02 = True #給hero換圖片的
+                    changeDirect_cache = changeDirect #讓子彈不要亂亂動
                     inputCache = playerInput
                     playerInput = ''
                 elif event.key == pygame.K_ESCAPE:
@@ -292,14 +323,6 @@ while running:
                     holdBACK = True
                     enterBool = False
                     playerInput = playerInput[:-1]
-                elif event.key == pygame.K_UP:
-                    holdUP = True
-                elif event.key == pygame.K_DOWN:
-                    holdDOWN = True
-                elif event.key == pygame.K_LEFT:
-                    holdLEFT = True
-                elif event.key == pygame.K_RIGHT:
-                    holdRIGHT = True
                 elif event.key == (pygame.K_LCTRL):
                     if(changeDirect):
                         changeDirect = False
@@ -309,10 +332,9 @@ while running:
                     hero = pygame.transform.flip(hero, True, False)
                     heroChange = pygame.transform.flip(heroChange, True, False)
                     heroPic = pygame.transform.flip(heroPic, True, False)
-                    if(not heroBulletFlag): #上一顆子彈還在飛
-                        bullet = pygame.transform.flip(bullet, True, False)
-                        bullet02 = pygame.transform.flip(bullet02, True, False)
-                        bullet03 = pygame.transform.flip(bullet03, True, False)
+                    bullet = pygame.transform.flip(bullet, True, False)
+                    bullet02 = pygame.transform.flip(bullet02, True, False)
+                    bullet03 = pygame.transform.flip(bullet03, True, False)
                 else:
                     playerInput += event.unicode
                     enterBool = False
@@ -415,9 +437,6 @@ while running:
     #-----------------------------------------------#
     #----------monsterBilt-----------#
     #monster 移動&反彈
-    if(monsterHP == 0):
-        monster_dy = 0
-        monster_dx = 0
     monsterCenter[1] += monster_dy
     monsterCenter[0] -= monster_dx
     monsterRect.center = (monsterCenter)
@@ -494,7 +513,7 @@ while running:
         if(heroBulletFlag):
             if((Condition6 or Condition7 or Condition8) and (Condition9 or Condition10 or Condition11)): #碰撞條件
                 HIT_monster = True
-            if(changeDirect):
+            if(changeDirect_cache):
                 if(bulletCenter_cache[j][0] >= 0): #讓位置1的子彈位移
                     bulletCenter_cache[j][0] -= 50
                 else:
@@ -563,10 +582,16 @@ while running:
         gameMessage = 'YOU WIN'
         needMessage = True
         gameOver = True
+        if(monsterHP == 0):
+            monster_dy = 0
+            monster_dx = 0
     if(heroHP == 0): #LOSE的訊息
         gameMessage = 'YOU ARE DEAD'
         needMessage = True
         gameOver = True
+        if(heroHP == 0):
+            hero_dy = 0
+            hero_dx = 0
     if(needMessage):
         gameText = playerFont.render(gameMessage, 0, messageColor)
         if(gameStart):
