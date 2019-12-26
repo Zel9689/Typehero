@@ -3,15 +3,15 @@ import pygame.font as Pyfont
 import os
 import random
 import math
-#判斷子彈是否打中
+#monster can move X-axis
 #1 blit per frame
 
 #全部調回預設值
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag\
         , Count01, Count02, Count03, Count04, Count05\
-            , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dy, flag_success, enterBool, enterBool02\
-                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset
+            , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
+                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, changeDirect
     #Before Loop
     gameStart = True #遊戲開始
     gameOver = False #遊戲結束
@@ -28,6 +28,7 @@ def gameReset():
     holdLEFT = False
     holdRIGHT = False
     holdBACK = False
+    changeDirect = False
     flag_success = False #是否有打對
     enterBool = False #是否按下enter
     enterBool02 =False 
@@ -38,12 +39,29 @@ def gameReset():
     heroCenter = [math.floor(resolution[0]/3), math.floor(resolution[1]/2)]
     monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
     monster_dy = monster_origin
+    monster_dx = monster_origin
+    hitboxShift()
     Text.clear()
     Text_dy.clear()
     TextPosition.clear()
     randomText.clear()
     randomWordsAngle() #先產生一個字
 
+#hitboxShift
+def hitboxShift():
+    global leftShift, rightShift, topShift, widthShift, heightShift
+    if(not changeDirect):
+        leftShift = 25
+        rightShift = -70
+        topShift = 17
+        widthShift = rightShift - leftShift
+        heightShift = -topShift
+    if(changeDirect):
+        leftShift = 70
+        rightShift = -25
+        topShift = 17
+        widthShift = rightShift - leftShift
+        heightShift = -topShift
 #text的rect.top rect.bottom怪怪的，只好手動調整每個數值
 def TextAttributes(i):
     global TextWidth, TextTop, TextBottom, TextHeight, TextRight, TextLeft_x, TextLeft_y
@@ -216,6 +234,7 @@ monsterChange = pygame.transform.scale(monsterChange, (200,180)) #monster大小�
 monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
 monster_origin = 3 #移動速度
 monster_dy = monster_origin
+monster_dx = monster_origin
 #monsters HP
 monsterHP_origin = 100
 monsterHP = monsterHP_origin
@@ -225,12 +244,7 @@ monsterHPwidth = 180
 #game clock
 clock = pygame.time.Clock()
 lastTick = 0
-#hitboxShift
-leftShift = 25
-rightShift = -72
-topShift = 17
-widthShift = rightShift - leftShift
-heightShift = -topShift
+
 
 
 #BeforeLoop
@@ -270,6 +284,13 @@ while running:
                     holdLEFT = True
                 elif event.key == pygame.K_RIGHT:
                     holdRIGHT = True
+                elif event.key == (pygame.K_LCTRL or pygame.K_RCTRL):
+                    if(changeDirect):
+                        changeDirect = False
+                    elif(not changeDirect):
+                        changeDirect = True
+                    hitboxShift()
+                    heroPic = pygame.transform.flip(heroPic, True, False)
                 else:
                     playerInput += event.unicode
                     enterBool = False
@@ -374,10 +395,14 @@ while running:
     #monster 移動&反彈
     if(monsterHP == 0):
         monster_dy = 0
+        monster_dx = 0
     monsterCenter[1] += monster_dy
+    monsterCenter[0] -= monster_dx
     monsterRect.center = (monsterCenter)
-    if (monsterRect.top<=0 or monsterRect.bottom>=screen.get_height()):
+    if (monsterRect.top<=0 or monsterRect.bottom>=resolution[1]):
         monster_dy *= -1
+    if (monsterRect.left<=0 or monsterRect.right>=resolution[0]):
+        monster_dx *= -1
     if(monsterMode): #monster圖1
         monsterPic = monster
     else: #monster圖2
@@ -417,14 +442,14 @@ while running:
             '''
     #----------------------------------------------------------------------------# 
     #----------HeroBlit-----------# 
-    '''
+    heroRect.center = (heroCenter)
+    screen.blit(heroPic,heroRect.topleft)
+
     #HERO的Hitbox
     RECTCOORD = [heroRect.left + leftShift, heroRect.top + topShift, heroWidth + widthShift , heroHeight + heightShift]
     HEROhitbox = pygame.Rect(RECTCOORD)
     pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
-    '''
-    heroRect.center = (heroCenter)
-    screen.blit(heroPic,heroRect.topleft)
+
     #-----------------------------#
     #---------Bullet飛行----------#
     if(not heroBulletFlag):
