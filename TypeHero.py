@@ -4,12 +4,13 @@ import os
 import random
 import math
 #1 blit per frame
-#compare的for好像可以用if替代
-#讓字會往右彈
+#讓字會往右彈 done
 #monster每隔一段時間變化移動方式
+#碰到monster會扣血
 #加血量有提示
 #沒辦法同時射兩顆
 #提示輸入enter繼續
+#改字大小hitbox會跑掉
 
 #全部調回預設值
 def gameReset():
@@ -49,6 +50,7 @@ def gameReset():
     Count_bullet = 0
     hitboxShift()
     Text.clear()
+    Text_dx.clear()
     Text_dy.clear()
     TextPosition.clear()
     randomText.clear()
@@ -73,16 +75,17 @@ def hitboxShift():
         heightShift = -topShift
 #text的rect.top rect.bottom怪怪的，只好手動調整每個數值
 def TextAttributes(i):
-    global TextWidth, TextTop, TextBottom, TextHeight, TextRight, TextLeft_x, TextLeft_y
+    global TextWidth, TextTop, TextBottom, TextHeight, TextRight, TextLeft
     j = Text.index(i) #j = 那個字的index
     TextWidth = i.get_rect()
+    Texttest = TextWidth.height
     TextWidth = TextWidth.width
     TextTop = TextPosition[j][1] + 5
     TextBottom = TextPosition[j][1] + 20
     TextHeight = TextBottom - TextTop
     TextRight = TextPosition[j][0] + TextWidth
-    TextLeft_x = TextPosition[j][0]
-    TextLeft_y = TextPosition[j][1]
+    TextLeft = TextPosition[j][0]
+    #print(Texttest, TextHeight)
     #---------------------------------------------------#
     return j
 
@@ -98,6 +101,7 @@ def randomWordsAngle():
         if(x >= 3):
             TextColor = (255,0,0)
         Text[i] = Font.render(randomText[i], True, (TextColor))
+    Text_dx.insert(0, random.randint(-5,5)) #Text_dx -5~5 隨機 插入index 0
     Text_dy.insert(0, random.randint(-5,5)) #Text_dy -5~5 隨機 插入index 0
     print(randomText)
     TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
@@ -148,6 +152,7 @@ def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
             j = randomText.index(i)
         del Text[j]
         del randomText[j]
+        del Text_dx[j]
         del Text_dy[j]
         del TextPosition[j]
         if(mode == 1):
@@ -165,6 +170,7 @@ wordsNum = len(words) #字的數量
 for i in range(wordsNum):
     words[i] = words[i].strip('\'')
 Text = [] #準備給遊戲渲染的字串list
+Text_dx = []
 Text_dy = [] #字移動的dy List
 randomText = [] #真的字的List
 
@@ -195,7 +201,6 @@ Alpha_origin = 175 #玩家輸入字的透明度(255不透明)
 Alpha = Alpha_origin
 playerText = Font.render(playerInput, True, (255,0,0))
 playerTextRect = playerText.get_rect()
-Text_dx = -2 #文字位移X軸
 TextPosition = []
 for i in range(10):
     TextPosition.append(2*[0])
@@ -265,7 +270,7 @@ monster_moveSpeed = 5 #移動速度
 monster_dy = monster_moveSpeed
 monster_dx = monster_moveSpeed
 #monsters HP
-monsterHP_origin = 100
+monsterHP_origin = 20
 monsterHP = monsterHP_origin
 monsterHPheight = 20
 monsterHPwidth = 180
@@ -465,6 +470,26 @@ while running:
     else: #monster圖2
         monsterPic = monsterChange
     screen.blit(monsterPic,monsterRect.topleft)
+
+    monster_leftShift = 30
+    monster_rightShift = -30
+    monster_topShift = 40
+    monster_widthShift = monster_rightShift - monster_leftShift
+    monster_heightShift = -monster_topShift
+    #monster的Hitbox
+    RECTCOORD = [monsterRect.left + monster_leftShift, monsterRect.top + monster_topShift, monsterWidth + monster_widthShift , monsterHeight + monster_heightShift]
+    HEROhitbox = pygame.Rect(RECTCOORD)
+    pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
+    HIT_direct = False
+    Condition12 = (heroRect.left + leftShift <= monsterRect.right + monster_rightShift and heroRect.right + rightShift >= monsterRect.right + monster_rightShift) #字在hero右邊
+    Condition13 = (heroRect.left + leftShift <= monsterRect.left + monster_leftShift and heroRect.right + rightShift >= monsterRect.left + monster_leftShift) #字在hero左邊
+    Condition14 = (heroRect.left + leftShift >= monsterRect.left + monster_leftShift and heroRect.right + rightShift <= monsterRect.right + monster_rightShift) #字在hero右邊和左邊之間
+    Condition15 = (heroRect.top + topShift <= monsterRect.bottom and heroRect.bottom >= monsterRect.bottom) #字在hero下面
+    Condition16 = (heroRect.bottom >= monsterRect.top + monster_topShift and heroRect.top + topShift <= monsterRect.top + monster_topShift) #字在hero上面
+    Condition17 = (heroRect.bottom <= monsterRect.bottom and heroRect.top + topShift >= monsterRect.top + monster_topShift) #字在hero上面和下面之間
+    if((Condition12 or Condition13 or Condition14) and (Condition15 or Condition16 or Condition17)): #碰撞條件
+        HIT_direct = True 
+        print(HIT_direct)
     #--------------------------------#
     #---------------------------------和文字有關的--------------------------------#
     HIT = False
@@ -472,31 +497,31 @@ while running:
         #Text movement and blit(用掃描的概念)
         for i in Text: #i = 掃到的字
             j = TextAttributes(i)
-            #字反彈
-            if (TextTop <= 0 or TextBottom >= screen.get_height()):
-                Text_dy[j] *= -1
-            #字移動
-            TextPosition[j][0] += Text_dx
-            TextPosition[j][1] += Text_dy[j]
-            #碰到hero就扣血 monster加血
-            Condition0 = (TextLeft_x <= heroRect.right + rightShift and TextRight >= heroRect.right + rightShift) #字在hero右邊
-            Condition1 = (TextLeft_x <= heroRect.left + leftShift and TextRight >= heroRect.left + leftShift) #字在hero左邊
-            Condition2 = (TextLeft_x >= heroRect.left + leftShift and TextRight <= heroRect.right + rightShift) #字在hero右邊和左邊之間
+            #Text的Hitbox
+            RECTCOORD = [TextLeft, TextTop, TextWidth, TextHeight]
+            TEXThitbox = pygame.Rect(RECTCOORD)
+            pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
+            #碰到hero就扣血
+            Condition0 = (TextLeft <= heroRect.right + rightShift and TextRight >= heroRect.right + rightShift) #字在hero右邊
+            Condition1 = (TextLeft <= heroRect.left + leftShift and TextRight >= heroRect.left + leftShift) #字在hero左邊
+            Condition2 = (TextLeft >= heroRect.left + leftShift and TextRight <= heroRect.right + rightShift) #字在hero右邊和左邊之間
             Condition3 = (TextTop <= heroRect.bottom and TextBottom >= heroRect.bottom) #字在hero下面
             Condition4 = (TextBottom >= heroRect.top + topShift and TextTop <= heroRect.top + topShift) #字在hero上面
             Condition5 = (TextBottom <= heroRect.bottom and TextTop >= heroRect.top + topShift) #字在hero上面和下面之間
             if((Condition0 or Condition1 or Condition2) and (Condition3 or Condition4 or Condition5)): #碰撞條件
                 HIT = True
             screen.blit(i, (TextPosition[j][0], TextPosition[j][1]))
+            #字反彈
+            if (TextTop <= 0 or TextBottom >= screen.get_height()):
+                Text_dy[j] *= -1
+            #字移動
+            TextPosition[j][0] += Text_dx[j]
+            TextPosition[j][1] += Text_dy[j]
             #字超過螢幕左邊就刪掉
             if (TextRight <= 0):
                 removeText(j,1)
-            
-            #Text的Hitbox
-            RECTCOORD = [TextLeft_x, TextTop, TextWidth, TextHeight]
-            TEXThitbox = pygame.Rect(RECTCOORD)
-            pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
-            
+            elif (TextLeft >= resolution[0]):
+                removeText(j,1)
     #----------------------------------------------------------------------------# 
     #----------HeroBlit-----------# 
     heroRect.center = (heroCenter)
@@ -520,12 +545,12 @@ while running:
         j = bulletArray.index(i)
         bulletRect[j].center = bulletCenter_cache[j]
     #----------看是否擊中monster------------#
-        Condition6 = (bulletRect[j].left <= monsterRect.right + rightShift and bulletRect[j].right >= monsterRect.right + rightShift) #字在hero右邊
-        Condition7 = (bulletRect[j].left <= monsterRect.left + leftShift and bulletRect[j].right >= monsterRect.left + leftShift) #字在hero左邊
-        Condition8 = (bulletRect[j].left >= monsterRect.left + leftShift and bulletRect[j].right <= monsterRect.right + rightShift) #字在hero右邊和左邊之間
+        Condition6 = (bulletRect[j].left <= monsterRect.right + monster_rightShift and bulletRect[j].right >= monsterRect.right + monster_rightShift) #字在hero右邊
+        Condition7 = (bulletRect[j].left <= monsterRect.left + monster_leftShift and bulletRect[j].right >= monsterRect.left + monster_leftShift) #字在hero左邊
+        Condition8 = (bulletRect[j].left >= monsterRect.left + monster_leftShift and bulletRect[j].right <= monsterRect.right + monster_rightShift) #字在hero右邊和左邊之間
         Condition9 = (bulletRect[j].top <= monsterRect.bottom and bulletRect[j].bottom >= monsterRect.bottom) #字在hero下面
-        Condition10 = (bulletRect[j].bottom >= monsterRect.top + topShift and bulletRect[j].top <= monsterRect.top + topShift) #字在hero上面
-        Condition11 = (bulletRect[j].bottom <= monsterRect.bottom and bulletRect[j].top >= monsterRect.top + topShift) #字在hero上面和下面之間
+        Condition10 = (bulletRect[j].bottom >= monsterRect.top + monster_topShift and bulletRect[j].top <= monsterRect.top + monster_topShift) #字在hero上面
+        Condition11 = (bulletRect[j].bottom <= monsterRect.bottom and bulletRect[j].top >= monsterRect.top + monster_topShift) #字在hero上面和下面之間
         if(heroBulletFlag):
             if((Condition6 or Condition7 or Condition8) and (Condition9 or Condition10 or Condition11)): #碰撞條件
                 HIT_monster = True
@@ -549,8 +574,11 @@ while running:
     heroHPcolor = [255,255,255]
     monsterHPcolor = [255,255,255]
     #-------扣血--------#
-    if(HIT and not gameOver and not gameStart):
-        heroHP -= 5 #扣的血量
+    if((HIT or HIT_direct) and not gameOver and not gameStart): #HIT撞到字 HIT_direct撞到怪
+        if(HIT):
+            heroHP -= 5 #扣的血量
+        if(HIT_direct):
+            heroHP -= 10
         heroHPcolor = [255,0,0]
         if(heroHP <= 0):
             heroHP = 0
@@ -633,6 +661,7 @@ while running:
     
     if(len(Text) > 40): #字的數量超過40就pop掉一個
         Text.pop()
+        Text_dx.pop()
         Text_dy.pop()
         TextPosition.pop()
 pygame.font.quit()
