@@ -6,7 +6,6 @@ import math
 #1 blit per frame
 #monster每隔一段時間變化移動方式
 #加血量有提示
-#提示輸入enter繼續
 
 #全部調回預設值
 def gameReset():
@@ -39,7 +38,7 @@ def gameReset():
     reset = False
     heroHP = heroHP_origin
     monsterHP = monsterHP_origin
-    heroCenter = [math.floor(resolution[0]/3), math.floor(resolution[1]/2)]
+    heroCenter = heroCenter_origin.copy()
     monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
     monster_dy = monster_moveSpeed
     monster_dx = monster_moveSpeed
@@ -201,8 +200,8 @@ heroChange = pygame.image.load(os.path.join(path, 'hero01_b.png'))
 herorChange = heroChange.convert_alpha()
 heroChange = pygame.transform.scale(heroChange, (150,120)) #hero大小調整
 #heroPosition
-heroCenter = [math.floor(resolution[0]/3), math.floor(resolution[1]/2)]
 hero_moveSpeed = 10 #按一下移動多少
+heroCenter_origin = [math.floor(resolution[0]/7), math.floor(resolution[1]/2)]
 hero_dy = hero_moveSpeed 
 hero_dx = hero_moveSpeed
 #hero's bullet
@@ -616,7 +615,7 @@ while running:
     #------------背景閃一下------------#
     if(alphaSolidFlag != 0):
         if(alphaSolidFlag == 1): #一拿到訊號就把它關掉，並開啟另一個訊號(轉換成正緣訊號的概念)
-            alphaSolid.fill((0,120,0))  #打對的顏色
+            alphaSolid.fill((0,150,0))  #打對的顏色
             AlphaVal02_origin = 30 #打對的alpha
         elif(alphaSolidFlag == 2):
             alphaSolid.fill((120,0,0)) #打錯的顏色
@@ -632,12 +631,14 @@ while running:
             alphaSolidHold = False
     #---------------------------------#
     #---------遊戲訊息-----------#
+    gameMessage_small = ''
     messageColor = [248,210,34] #訊息顏色
     if(gameStart): #遊戲開始訊息
         gameMessage = 'Press any key to START'
         needMessage = True
     if(monsterHP == 0): #WIN的訊息
         gameMessage = 'YOU WIN'
+        gameMessage_small = 'Press Enter to Restart'
         needMessage = True
         gameOver = True
         if(monsterHP == 0):
@@ -645,6 +646,7 @@ while running:
             monster_dx = 0
     if(heroHP == 0): #LOSE的訊息
         gameMessage = 'YOU ARE DEAD'
+        gameMessage_small = 'Press Enter to Restart'
         needMessage = True
         gameOver = True
         if(heroHP == 0):
@@ -652,16 +654,21 @@ while running:
             hero_dx = 0
     if(needMessage):
         gameText = playerFont.render(gameMessage, 0, messageColor)
+        gameText_small = Font.render(gameMessage_small, 0, (255,255,255))
         if(gameStart):
             gameTextRect = gameText.get_rect()
-            scaleVal = (math.floor(gameTextRect.width * 0.6), math.floor(gameTextRect.height * 0.6))
+            scaleVal = (math.floor(gameTextRect.width * 0.6), math.floor(gameTextRect.height * 0.6)) #遊戲開始的訊息大小調整
             gameText = pygame.transform.scale(gameText, scaleVal)
         gameText.set_alpha(230) #設定訊息透明度
         gameTextRect = gameText.get_rect()
-        X = math.floor(resolution[0]/2-gameTextRect.width/2)
-        Y = math.floor(resolution[1]/2-gameTextRect.height/2)
+        gameText_smallRect = gameText_small.get_rect()
+        X = math.floor(resolution[0]/2-gameTextRect.width/2) #位置置中
+        Y = math.floor(resolution[1]/2-gameTextRect.height/2) #位置置中
         gameTextRect.topleft = (X, Y)
+        gameText_smallRect.topleft = (X, Y+150)
         screen.blit(gameText, gameTextRect.topleft)
+        screen.blit(gameText_small, gameText_smallRect.topleft)
+        #--------外框--------#
         RECTCOORD = [gameTextRect.left - 10, gameTextRect.top - 5, gameTextRect.width + 20, gameTextRect.height + 10]
         MESSAGErect1 = pygame.Rect(RECTCOORD)
         pygame.draw.rect(screen, (248,210,34), MESSAGErect1, 6) #外框顏色
