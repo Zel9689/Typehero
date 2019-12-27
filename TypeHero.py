@@ -4,16 +4,15 @@ import os
 import random
 import math
 #1 blit per frame
-#讓字會往右彈 done
 #monster每隔一段時間變化移動方式
 #加血量有提示
-#沒辦法同時射兩顆
 #提示輸入enter繼續
+#打錯畫面會紅一下
 
 #全部調回預設值
 def gameReset():
-    global gameStart, gameOver, running, monsterMode, heroBulletFlag\
-        , Count01, Count02, Count03, Count04, Count05, Count_bullet\
+    global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold\
+        , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
                 , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, hero_dx, hero_dy
     #Before Loop
@@ -33,6 +32,8 @@ def gameReset():
     holdRIGHT = False
     holdBACK = False
     flag_success = False #是否有打對
+    alphaSolidFlag = False #打錯背景紅一下的訊號
+    alphaSolidHold = False #打錯背景紅一下的保持Flag
     enterBool = False #是否按下enter
     enterBool02 =False 
     needMessage = False #需要遊戲訊息
@@ -97,13 +98,14 @@ def randomWordsAngle():
 
 #比較打對哪個字的函式
 def compare():
-    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, removeNum
+    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, alphaSolidFlag, removeNum
     #playerTextColorFlag: 按下enter的訊號旗標，判斷是否打對
     #heroBulletFlag: 按下enter的訊號旗標，判斷是否正在飛
     flag_success = False
     if(playerInput in randomText): #打對
         flag_success = True
         playerTextColorFlag = flag_success #玩家輸入flag=True
+        alphaSolidFlag = not flag_success
         heroBulletFlag.insert(0, 1) #insert 1到子彈是否正在飛的Flag List
         j = randomText.index(playerInput)
         removeNum = removeText(j,0) #removeNum:一次消的個數
@@ -120,6 +122,7 @@ def compare():
         monsterHP += 10 #monster加血
         bulletPic = null #沒擊中的話 子彈圖案變空的
         playerTextColorFlag = flag_success
+        alphaSolidFlag = not flag_success
         heroBulletFlag.insert(0, 0)
     bulletArray.insert(0, bulletPic) #加一顆子彈圖片到Array
     bulletCenter_cache.insert(0, bulletCenter) #加子彈位置到Array
@@ -172,6 +175,13 @@ background02 = pygame.Surface(screen.get_size())
 background02 = pygame.image.load(os.path.join(path, 'background.png'))
 background02 = background02.convert()
 backgroundStart02 = backgroundStart + 1492
+alphaSolid = pygame.Surface(screen.get_size())
+alphaSolid.fill((120,0,0))
+AlphaVal02_origin = 80
+AlphaVal02 = AlphaVal02_origin
+
+
+
 
 #words
 fontLocation = Pyfont.match_font('Minecraft Regular')
@@ -556,8 +566,6 @@ while running:
                     bulletCenter_cache.pop(j)
                     heroBulletFlag.pop(j)
         screen.blit(i ,bulletRect[j].topleft) ##不能放在if(heroBulletFlag[j] == 1)裡面??? 不知道為什麼
-        #if(len(heroBulletFlag)>1):
-        #    pass
     #---------------------------------------------------------------------------------------------------------------#
     #--------------------血條顯示------------------------------------------------#
     heroHPcolor = [255,255,255]
@@ -613,6 +621,18 @@ while running:
     pygame.draw.rect(screen, monsterHPcolor, monsterHPrect2, 0)
     pygame.draw.rect(screen, (0,0,0), monsterHPrect1, 3)
     #------------------------------------------------------------------------------#
+    #------------背景紅一下------------#
+    if(alphaSolidFlag): #一拿到訊號就把它關掉，並開啟另一個訊號(轉換成正緣訊號的概念)
+        AlphaVal02 = AlphaVal02_origin
+        alphaSolidHold = True
+        alphaSolidFlag = False
+    if(alphaSolidHold):
+        AlphaVal02 -= 5 #背景紅一下的alpha值
+        alphaSolid.set_alpha(AlphaVal02)
+        screen.blit(alphaSolid, (0,0))
+    if(AlphaVal02 <= 0):
+        alphaSolidHold = False
+    #---------------------------------#
     #---------遊戲訊息-----------#
     messageColor = [248,210,34] #訊息顏色
     if(gameStart): #遊戲開始訊息
