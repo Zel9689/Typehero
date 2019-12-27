@@ -5,12 +5,12 @@ import random
 import math
 #1 blit per frame
 #monster每隔一段時間變化移動方式
-#加血量有提示
+#加更多文字庫 多組 每組十個
 
 #全部調回預設值
 def gameReset():
-    global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold\
-        , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag\
+    global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold, HPchangeColorHold01, HPchangeColorHold02\
+        , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag, HPchangeColor\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
                 , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, hero_dx, hero_dy
     #Before Loop
@@ -31,7 +31,10 @@ def gameReset():
     holdBACK = False
     flag_success = False #是否有打對
     alphaSolidFlag = 0 #打錯背景紅一下的訊號，1 = 有打對 , 2 = 打錯
+    HPchangeColor = 0 #1 = 打對 hero血條變綠一下 2 = 打錯 monster血條變綠
     alphaSolidHold = False #打錯背景紅一下的保持Flag
+    HPchangeColorHold01 = False #打對hero血條變綠一下的保持Flag
+    HPchangeColorHold02 = False #打錯monster血條變綠一下的保持Flag
     enterBool = False #是否按下enter
     enterBool02 =False 
     needMessage = False #需要遊戲訊息
@@ -96,14 +99,15 @@ def randomWordsAngle():
 
 #比較打對哪個字的函式
 def compare():
-    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, alphaSolidFlag, removeNum
+    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, alphaSolidFlag, HPchangeColor, removeNum
     #playerTextColorFlag: 按下enter的訊號旗標，判斷是否打對
     #heroBulletFlag: 按下enter的訊號旗標，判斷是否正在飛
     flag_success = False
     if(playerInput in randomText): #打對
         flag_success = True
         playerTextColorFlag = flag_success #玩家輸入flag=True
-        alphaSolidFlag = 1
+        alphaSolidFlag = 1 #打對背景變綠
+        HPchangeColor = 1 #打對hero血條變綠
         heroBulletFlag.insert(0, 1) #insert 1到子彈是否正在飛的Flag List
         j = randomText.index(playerInput)
         removeNum = removeText(j,0) #removeNum:一次消的個數
@@ -120,7 +124,8 @@ def compare():
         monsterHP += 10 #monster加血
         bulletPic = null #沒擊中的話 子彈圖案變空的
         playerTextColorFlag = flag_success
-        alphaSolidFlag = 2
+        alphaSolidFlag = 2 #打錯背景變紅
+        HPchangeColor = 2 #沒打對怪血條變綠
         heroBulletFlag.insert(0, 0)
     bulletArray.insert(0, bulletPic) #加一顆子彈圖片到Array
     bulletCenter_cache.insert(0, bulletCenter) #加子彈位置到Array
@@ -569,11 +574,11 @@ while running:
         if(HIT_direct):
             heroHP -= 10
             print('hit by monster!')
-        heroHPcolor = [255,0,0]
+        heroHPcolor = [255,103,92]
         print('HIT')
     if(HIT_monster):
         monsterHP -= removeNum*2 #消一個monster扣5HP
-        monsterHPcolor = [255,0,0]
+        monsterHPcolor = [255,103,92]
         print('monster get hit!')
     #血量不會突破限制
     if(heroHP > heroHP_origin):
@@ -584,7 +589,25 @@ while running:
         monsterHP = monsterHP_origin
     if(monsterHP <= 0):
         monsterHP = 0
-    #-------------------#
+    #--------加血換顏色-----------#
+    if(HPchangeColor != 0): #把按enter(非空字串)檢查的訊號變正緣訊號
+        if(HPchangeColor == 1):
+            HPchangeColorHold01 = True #啟動timer01
+        elif(HPchangeColor == 2):
+            HPchangeColorHold02 = True #啟動timer02
+        simTimer01 = 100
+        simTimer02 = 100
+        HPchangeColor = 0
+    if(HPchangeColorHold01):
+        heroHPcolor = [82,255,139] #打對英雄變的顏色
+        simTimer01 -= 5 #遞減單位 越高時間越短
+        if(simTimer01 <= 0):
+            HPchangeColorHold01 = False
+    if(HPchangeColorHold02):
+        monsterHPcolor = [82,255,139] #打錯怪物變的顏色
+        simTimer02 -= 5 #遞減單位 越高時間越短
+        if(simTimer02 <= 0):
+            HPchangeColorHold02 = False
     #HeroHP裡面
     LEFT = heroRect.left
     TOP = heroRect.top - 17
