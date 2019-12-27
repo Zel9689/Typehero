@@ -7,7 +7,6 @@ import math
 #monster每隔一段時間變化移動方式
 #加血量有提示
 #提示輸入enter繼續
-#打錯畫面會紅一下
 
 #全部調回預設值
 def gameReset():
@@ -32,7 +31,7 @@ def gameReset():
     holdRIGHT = False
     holdBACK = False
     flag_success = False #是否有打對
-    alphaSolidFlag = False #打錯背景紅一下的訊號
+    alphaSolidFlag = 0 #打錯背景紅一下的訊號，1 = 有打對 , 2 = 打錯
     alphaSolidHold = False #打錯背景紅一下的保持Flag
     enterBool = False #是否按下enter
     enterBool02 =False 
@@ -105,7 +104,7 @@ def compare():
     if(playerInput in randomText): #打對
         flag_success = True
         playerTextColorFlag = flag_success #玩家輸入flag=True
-        alphaSolidFlag = not flag_success
+        alphaSolidFlag = 1
         heroBulletFlag.insert(0, 1) #insert 1到子彈是否正在飛的Flag List
         j = randomText.index(playerInput)
         removeNum = removeText(j,0) #removeNum:一次消的個數
@@ -122,7 +121,7 @@ def compare():
         monsterHP += 10 #monster加血
         bulletPic = null #沒擊中的話 子彈圖案變空的
         playerTextColorFlag = flag_success
-        alphaSolidFlag = not flag_success
+        alphaSolidFlag = 2
         heroBulletFlag.insert(0, 0)
     bulletArray.insert(0, bulletPic) #加一顆子彈圖片到Array
     bulletCenter_cache.insert(0, bulletCenter) #加子彈位置到Array
@@ -175,13 +174,7 @@ background02 = pygame.Surface(screen.get_size())
 background02 = pygame.image.load(os.path.join(path, 'background.png'))
 background02 = background02.convert()
 backgroundStart02 = backgroundStart + 1492
-alphaSolid = pygame.Surface(screen.get_size())
-alphaSolid.fill((120,0,0))
-AlphaVal02_origin = 80
-AlphaVal02 = AlphaVal02_origin
-
-
-
+alphaSolid = pygame.Surface(screen.get_size()) #背景閃一下半透明顏色的Surface
 
 #words
 fontLocation = Pyfont.match_font('Minecraft Regular')
@@ -272,8 +265,6 @@ monsterHPwidth = 180
 clock = pygame.time.Clock()
 lastTick = 0
 
-
-
 #BeforeLoop
 changeDirect = False
 gameReset()
@@ -324,8 +315,9 @@ while running:
                 elif event.key == pygame.K_RIGHT:
                     holdRIGHT = True
                 elif event.key == pygame.K_RETURN:
-                    compare() #比較有沒有打一樣的
-                    enterBool = True #給打字特效的
+                    if(playerInput.split() != []):
+                        compare() #比較有沒有打一樣的
+                        enterBool = True #給打字特效的
                     enterBool02 = True #給hero換圖片的
                     changeDirect_cache = changeDirect #讓子彈不要亂亂動
                     inputCache = playerInput
@@ -621,17 +613,23 @@ while running:
     pygame.draw.rect(screen, monsterHPcolor, monsterHPrect2, 0)
     pygame.draw.rect(screen, (0,0,0), monsterHPrect1, 3)
     #------------------------------------------------------------------------------#
-    #------------背景紅一下------------#
-    if(alphaSolidFlag): #一拿到訊號就把它關掉，並開啟另一個訊號(轉換成正緣訊號的概念)
-        AlphaVal02 = AlphaVal02_origin
+    #------------背景閃一下------------#
+    if(alphaSolidFlag != 0):
+        if(alphaSolidFlag == 1): #一拿到訊號就把它關掉，並開啟另一個訊號(轉換成正緣訊號的概念)
+            alphaSolid.fill((0,120,0))  #打對的顏色
+            AlphaVal02_origin = 30 #打對的alpha
+        elif(alphaSolidFlag == 2):
+            alphaSolid.fill((120,0,0)) #打錯的顏色
+            AlphaVal02_origin = 80 #打錯的alpha
+        AlphaVal02 = AlphaVal02_origin    
         alphaSolidHold = True
-        alphaSolidFlag = False
+        alphaSolidFlag = 0
     if(alphaSolidHold):
-        AlphaVal02 -= 5 #背景紅一下的alpha值
+        AlphaVal02 -= math.floor(AlphaVal02_origin/15) #背景紅一下的alpha值
         alphaSolid.set_alpha(AlphaVal02)
         screen.blit(alphaSolid, (0,0))
-    if(AlphaVal02 <= 0):
-        alphaSolidHold = False
+        if(AlphaVal02 <= 0):
+            alphaSolidHold = False
     #---------------------------------#
     #---------遊戲訊息-----------#
     messageColor = [248,210,34] #訊息顏色
@@ -669,10 +667,8 @@ while running:
         pygame.draw.rect(screen, (248,210,34), MESSAGErect1, 6) #外框顏色
     if(reset):
         gameReset()
-
     #----------------------------#
-    
-    
+
     pygame.display.update()
     
     if(len(Text) > 40): #字的數量超過40就pop掉一個
