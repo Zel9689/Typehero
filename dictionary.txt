@@ -1,3 +1,4 @@
+$交通單字組$
 'front seat'
 'back seat'
 'steering wheel'
@@ -8,3 +9,27 @@
 'traffic jam'
 'bicycle'
 'motorcycle'
+#DIVIDER#
+$python指令組$
+'print'
+'import'
+'True'
+'False'
+'while'
+'for'
+'x=input('')'
+'else'
+'break'
+'eval'
+#DIVIDER#
+$Take On Me歌詞組$
+'take'
+'on'
+'me'
+'I'll'
+'be'
+'gone'
+'in'
+'a day'
+'or'
+'two'

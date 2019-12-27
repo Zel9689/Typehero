@@ -5,7 +5,6 @@ import random
 import math
 #1 blit per frame
 #monster每隔一段時間變化移動方式
-#加更多文字庫 多組 每組十個
 
 #全部調回預設值
 def gameReset():
@@ -78,7 +77,7 @@ def hitboxShift():
 
 #文字隨機出和隨機角度
 def randomWordsAngle():
-    randomText.insert(0, random.choice(words))
+    randomText.insert(0, random.choice(wordCollection[Set]))
     Text.insert(0, Font.render(randomText[0], False, (255,255,255))) #在Text List插入隨機的字到index 0
     #依據畫面上有幾個同樣的字顯示字的顏色
     for i in range(len(randomText)):
@@ -151,11 +150,49 @@ def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
 #nonPygame side
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
 f = open(path + '/dictionary.txt','r') #開啟字典
-Dict = f.read()
-words = Dict.splitlines() #字的List
-wordsNum = len(words) #字的數量
+word_cache = f.read()
+f.close()
+wordCollection = [[]]
+word_cache = word_cache.splitlines() #字的List
+wordsNum = len(word_cache) #字的數量
+k = 0
 for i in range(wordsNum):
-    words[i] = words[i].strip('\'')
+    word_cache[i] = word_cache[i].strip('\'')
+    if(word_cache[i] == '#DIVIDER#'):
+        wordCollection += [[]]
+        k += 1
+    else:
+        wordCollection[k].append(word_cache[i])
+os.system('cls')
+while(True):
+    print('輸入要玩的文字組合：',end='')
+    for i in range(len(wordCollection)):
+        wordCollection[i][0] = wordCollection[i][0].strip('$')
+        print('(',i,') ', sep='', end='') 
+        print(wordCollection[i][0],'',end='')
+    print(': ', end='')
+    try:
+        Set = int(input())
+    except(ValueError):
+        print('請輸入數字')
+    else:
+        if(Set > len(wordCollection) - 1):
+            print('請輸入選項內的數字')
+        else:
+            break
+for i in wordCollection:
+    i.pop(0)
+while(True):
+    print('選擇難度:(0)簡單 (1)普通 (2)緊張 (3)刺激 (4)怕: ',end = '')
+    try:
+        Difficult = int(input())
+    except(ValueError):
+        print('請輸入數字')
+    else:
+        if(Difficult > 4):
+            print('請輸入選項內的數字')
+        else:
+            break
 Text = [] #準備給遊戲渲染的字串list
 Text_dx = []
 Text_dy = [] #字移動的dy List
@@ -164,8 +201,8 @@ randomText = [] #真的字的List
 #init
 pygame.init()
 pygame.font.init()
-pygame.display.set_caption("Type Hero")
 resolution = [1280, 768]
+pygame.display.set_caption("Type Hero")
 screen = pygame.display.set_mode(resolution)
 
 #background
