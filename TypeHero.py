@@ -21,7 +21,7 @@ def gameReset():
     gameOver = False #遊戲結束
     running = True #視窗執行中
     monsterMode = True #monster哪一張圖片
-    heroBulletFlag = False #子彈一開始沒出現
+    heroBulletFlag = [] #子彈一開始沒出現
     Count01 = 0 #monster換圖片的counter
     Count02 = 0 #Text的counter
     Count03 = 0 #Enter按下後動畫的counter
@@ -51,12 +51,14 @@ def gameReset():
     Text_dx.clear()
     Text_dy.clear()
     TextPosition.clear()
+    heroBulletFlag.clear()
     randomText.clear()
     bulletArray.clear()
     bulletCenter_cache.clear()
+    heroBulletFlag.clear()
     randomWordsAngle() #先產生一個字
 
-#hitboxShift
+#hitboxShift 讓hitbox更接近玩家想像
 def hitboxShift():
     global leftShift, rightShift, topShift, widthShift, heightShift
     if(not changeDirect):
@@ -76,15 +78,16 @@ def hitboxShift():
 def randomWordsAngle():
     randomText.insert(0, random.choice(words))
     Text.insert(0, Font.render(randomText[0], False, (255,255,255))) #在Text List插入隨機的字到index 0
+    #依據畫面上有幾個同樣的字顯示字的顏色
     for i in range(len(randomText)):
         TextColor = (255,255,255)
         x = randomText.count(randomText[i])
         if(x == 2):
-            TextColor = (0,0,255)
+            TextColor = (130,234,255)
         if(x >= 3):
-            TextColor = (255,0,0)
+            TextColor = (255,94,94)
         Text[i] = Font.render(randomText[i], False, (TextColor))
-    Text_dx.insert(0, random.randint(-6,6)) #Text_dx m~n 隨機 插入index 0
+    Text_dx.insert(0, random.randint(-3,3)) #Text_dx m~n 隨機 插入index 0
     Text_dy.insert(0, random.randint(-6,6)) #Text_dy m~n 隨機 插入index 0
     print(randomText)
     TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
@@ -94,37 +97,32 @@ def randomWordsAngle():
 
 #比較打對哪個字的函式
 def compare():
-    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, heroBulletFlag02, removeNum
+    global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, removeNum
+    #playerTextColorFlag: 按下enter的訊號旗標，判斷是否打對
+    #heroBulletFlag: 按下enter的訊號旗標，判斷是否正在飛
     flag_success = False
-    playerTextColorFlag = flag_success
-    heroBulletFlag = flag_success
-    heroBulletFlag02 = flag_success
-    for i in randomText: 
-        if(playerInput == i): #成功打入一樣的字母
-            flag_success = True
-            playerTextColorFlag = flag_success
-            heroBulletFlag = flag_success
-            heroBulletFlag02 = flag_success
-            j = randomText.index(i)
-            removeNum = removeText(j,0)
-            if(removeNum == 1):
-                bulletPic = bullet
-            elif(removeNum == 2):
-                bulletPic = bullet02
-            elif(removeNum >= 3):
-                bulletPic = bullet03
-            bulletArray.insert(0, bulletPic) #加一顆子彈圖片到Array
-            bulletCenter_cache.insert(0, bulletCenter) #加子彈位置到Array
-            heroHP += removeNum*5 #消一個hero加5HP
-            if(heroHP > heroHP_origin):
-                heroHP = heroHP_origin
-            print(removeNum)
-            print('你打對',playerInput,'了')
-            print(monsterHP)
+    if(playerInput in randomText): #打對
+        flag_success = True
+        playerTextColorFlag = flag_success #玩家輸入flag=True
+        heroBulletFlag.insert(0, 1) #insert 1到子彈是否正在飛的Flag List
+        j = randomText.index(playerInput)
+        removeNum = removeText(j,0) #removeNum:一次消的個數
+        heroHP += removeNum*5 #每消一個hero加5HP
+        if(removeNum == 1):
+            bulletPic = bullet
+        elif(removeNum == 2):
+            bulletPic = bullet02
+        elif(removeNum >= 3):
+            bulletPic = bullet03
+        print(removeNum)
+        print('你打對',playerInput,'了')
     if(not flag_success):#沒打對的話
         monsterHP += 10 #monster加血
-        if(monsterHP > monsterHP_origin):
-            monsterHP = monsterHP_origin
+        bulletPic = null #沒擊中的話 子彈圖案變空的
+        playerTextColorFlag = flag_success
+        heroBulletFlag.insert(0, 0)
+    bulletArray.insert(0, bulletPic) #加一顆子彈圖片到Array
+    bulletCenter_cache.insert(0, bulletCenter) #加子彈位置到Array
 
 #專門刪除List內的字
 def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
@@ -212,7 +210,7 @@ bullet = pygame.image.load(os.path.join(path, 'hero_bullet01.png'))
 bullet = bullet.convert_alpha()
 bullet = pygame.transform.scale(bullet, (60,50)) #bullet大小調整
 bulletPic = bullet
-for i in range(4): #弄4個一樣的Rect
+for i in range(15): #弄4個一樣的Rect
     bulletRect.append(bullet.get_rect())
 #hero's bullet02
 bullet02 = pygame.image.load(os.path.join(path, 'hero_bullet02.png'))
@@ -228,6 +226,9 @@ bullet03 = pygame.transform.scale(bullet03, (100,56)) #bullet03大小調整
 bullet03Rect = bullet03.get_rect()
 bullet03Height = bullet03Rect.height
 bullet03Width = bullet03Rect.width
+#null bullet
+null = pygame.image.load(os.path.join(path, 'null.png'))
+null = null.convert_alpha()
 #Hero health
 heroHP_origin = 500
 heroHP = heroHP_origin
@@ -439,10 +440,11 @@ while running:
         screen.blit(playerText_enter, (X, Y))
     #-----------------------------------------------#
     #----------monsterBilt-----------#
-    #monster 移動&反彈
+    #monster 移動
     monsterCenter[1] += monster_dy
     monsterCenter[0] -= monster_dx
-    monsterRect.center = (monsterCenter)
+    monsterRect.center = (monsterCenter) #把monsterCenter更新到真的monster位置
+    #反彈
     if (monsterRect.top<=0 or monsterRect.bottom>=resolution[1]):
         monster_dy *= -1
     if (monsterRect.left<=0 or monsterRect.right>=resolution[0]):
@@ -452,7 +454,7 @@ while running:
     else: #monster圖2
         monsterPic = monsterChange
     screen.blit(monsterPic,monsterRect.topleft)
-
+    #monster的HitboxShift
     monster_leftShift = 30
     monster_rightShift = -30
     monster_topShift = 40
@@ -463,15 +465,14 @@ while running:
     HEROhitbox = pygame.Rect(RECTCOORD)
     pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
     HIT_direct = False
-    Condition12 = (heroRect.left + leftShift <= monsterRect.right + monster_rightShift and heroRect.right + rightShift >= monsterRect.right + monster_rightShift) #字在hero右邊
-    Condition13 = (heroRect.left + leftShift <= monsterRect.left + monster_leftShift and heroRect.right + rightShift >= monsterRect.left + monster_leftShift) #字在hero左邊
-    Condition14 = (heroRect.left + leftShift >= monsterRect.left + monster_leftShift and heroRect.right + rightShift <= monsterRect.right + monster_rightShift) #字在hero右邊和左邊之間
-    Condition15 = (heroRect.top + topShift <= monsterRect.bottom and heroRect.bottom >= monsterRect.bottom) #字在hero下面
-    Condition16 = (heroRect.bottom >= monsterRect.top + monster_topShift and heroRect.top + topShift <= monsterRect.top + monster_topShift) #字在hero上面
-    Condition17 = (heroRect.bottom <= monsterRect.bottom and heroRect.top + topShift >= monsterRect.top + monster_topShift) #字在hero上面和下面之間
+    Condition12 = (heroRect.left + leftShift <= monsterRect.right + monster_rightShift and heroRect.right + rightShift >= monsterRect.right + monster_rightShift) #hero在monster右邊
+    Condition13 = (heroRect.left + leftShift <= monsterRect.left + monster_leftShift and heroRect.right + rightShift >= monsterRect.left + monster_leftShift) #hero在monster左邊
+    Condition14 = (heroRect.left + leftShift >= monsterRect.left + monster_leftShift and heroRect.right + rightShift <= monsterRect.right + monster_rightShift) #hero在monster右邊和左邊之間
+    Condition15 = (heroRect.top + topShift <= monsterRect.bottom and heroRect.bottom >= monsterRect.bottom) #hero在monster下面
+    Condition16 = (heroRect.bottom >= monsterRect.top + monster_topShift and heroRect.top + topShift <= monsterRect.top + monster_topShift) #hero在monster上面
+    Condition17 = (heroRect.bottom <= monsterRect.bottom and heroRect.top + topShift >= monsterRect.top + monster_topShift) #hero在monster上面和下面之間
     if((Condition12 or Condition13 or Condition14) and (Condition15 or Condition16 or Condition17)): #碰撞條件
         HIT_direct = True 
-        print(HIT_direct)
     #--------------------------------#
     #---------------------------------和文字有關的--------------------------------#
     HIT = False
@@ -518,7 +519,7 @@ while running:
 
     #-----------------------------#
     #-------------------------------------------------Bullet飛行---------------------------------------------------#
-    #平常子彈一直追蹤英雄位置
+    #平常子彈一直追蹤英雄位置(最新位置在index 0)
     if(not changeDirect):
         bulletCenter = [heroCenter[0] + 100, heroCenter[1] + 4]
     elif(changeDirect):
@@ -527,32 +528,36 @@ while running:
     HIT_monster = False
     for i in bulletArray:
         j = bulletArray.index(i)
-        bulletRect[j].center = bulletCenter_cache[j]
+        bulletRect[j].center = bulletCenter_cache[j] #更新Center到真的子彈位置
     #----------看是否擊中monster------------#
-        Condition6 = (bulletRect[j].left <= monsterRect.right + monster_rightShift and bulletRect[j].right >= monsterRect.right + monster_rightShift) #字在hero右邊
-        Condition7 = (bulletRect[j].left <= monsterRect.left + monster_leftShift and bulletRect[j].right >= monsterRect.left + monster_leftShift) #字在hero左邊
-        Condition8 = (bulletRect[j].left >= monsterRect.left + monster_leftShift and bulletRect[j].right <= monsterRect.right + monster_rightShift) #字在hero右邊和左邊之間
-        Condition9 = (bulletRect[j].top <= monsterRect.bottom and bulletRect[j].bottom >= monsterRect.bottom) #字在hero下面
-        Condition10 = (bulletRect[j].bottom >= monsterRect.top + monster_topShift and bulletRect[j].top <= monsterRect.top + monster_topShift) #字在hero上面
-        Condition11 = (bulletRect[j].bottom <= monsterRect.bottom and bulletRect[j].top >= monsterRect.top + monster_topShift) #字在hero上面和下面之間
-        if(heroBulletFlag):
+        Condition6 = (bulletRect[j].left <= monsterRect.right + monster_rightShift and bulletRect[j].right >= monsterRect.right + monster_rightShift) #子彈在monster右邊
+        Condition7 = (bulletRect[j].left <= monsterRect.left + monster_leftShift and bulletRect[j].right >= monsterRect.left + monster_leftShift) #子彈在monster左邊
+        Condition8 = (bulletRect[j].left >= monsterRect.left + monster_leftShift and bulletRect[j].right <= monsterRect.right + monster_rightShift) #子彈在monster右邊和左邊之間
+        Condition9 = (bulletRect[j].top <= monsterRect.bottom and bulletRect[j].bottom >= monsterRect.bottom) #子彈在monster下面
+        Condition10 = (bulletRect[j].bottom >= monsterRect.top + monster_topShift and bulletRect[j].top <= monsterRect.top + monster_topShift) #子彈在monster上面
+        Condition11 = (bulletRect[j].bottom <= monsterRect.bottom and bulletRect[j].top >= monsterRect.top + monster_topShift) #子彈在monster上面和下面之間
+        if(heroBulletFlag[j] == 1):
             if((Condition6 or Condition7 or Condition8) and (Condition9 or Condition10 or Condition11)): #碰撞條件
                 HIT_monster = True
-            if(changeDirect_cache):
-                if(bulletCenter_cache[j][0] >= 0): #讓位置1的子彈位移
+            if(changeDirect_cache): #看hero身體方向飛
+                if(bulletCenter_cache[j][0] >= 0):
                     bulletCenter_cache[j][0] -= 50
                 else:
-                    heroBulletFlag = False
+                    heroBulletFlag[j] = 0
                     bulletArray.pop(j)
                     bulletCenter_cache.pop(j)
+                    heroBulletFlag.pop(j)
             else:
-                if(bulletCenter_cache[j][0] <= resolution[0]): #讓位置1的子彈位移
+                if(bulletCenter_cache[j][0] <= resolution[0]):
                     bulletCenter_cache[j][0] += 50
                 else:
-                    heroBulletFlag = False
+                    heroBulletFlag[j] = 0
                     bulletArray.pop(j)
                     bulletCenter_cache.pop(j)
-        screen.blit(i ,bulletRect[j].topleft)
+                    heroBulletFlag.pop(j)
+        screen.blit(i ,bulletRect[j].topleft) ##不能放在if(heroBulletFlag[j] == 1)裡面??? 不知道為什麼
+        #if(len(heroBulletFlag)>1):
+        #    pass
     #---------------------------------------------------------------------------------------------------------------#
     #--------------------血條顯示------------------------------------------------#
     heroHPcolor = [255,255,255]
@@ -561,18 +566,25 @@ while running:
     if((HIT or HIT_direct) and not gameOver and not gameStart): #HIT撞到字 HIT_direct撞到怪
         if(HIT):
             heroHP -= 5 #扣的血量
+            print('hit by a word!')
         if(HIT_direct):
             heroHP -= 10
+            print('hit by monster!')
         heroHPcolor = [255,0,0]
-        if(heroHP <= 0):
-            heroHP = 0
         print('HIT')
     if(HIT_monster):
         monsterHP -= removeNum*2 #消一個monster扣5HP
         monsterHPcolor = [255,0,0]
-        if(monsterHP <= 0):
-            monsterHP = 0
-        print('HIT_monster')
+        print('monster get hit!')
+    #血量不會突破限制
+    if(heroHP > heroHP_origin):
+        heroHP = heroHP_origin
+    if(heroHP <= 0):
+        heroHP = 0
+    if(monsterHP > monsterHP_origin):
+        monsterHP = monsterHP_origin
+    if(monsterHP <= 0):
+        monsterHP = 0
     #-------------------#
     #HeroHP裡面
     LEFT = heroRect.left
@@ -648,5 +660,9 @@ while running:
         Text_dx.pop()
         Text_dy.pop()
         TextPosition.pop()
+    if(len(bulletArray) > 14):
+        bulletArray.pop()
+        bulletCenter_cache.pop()
+        heroBulletFlag.pop()
 pygame.font.quit()
 pygame.quit()
