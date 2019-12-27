@@ -5,7 +5,7 @@ import random
 import math
 #1 blit per frame
 #monster每隔一段時間變化移動方式
-
+#時間內要擊敗怪獸
 #全部調回預設值
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold, HPchangeColorHold01, HPchangeColorHold02\
@@ -120,7 +120,7 @@ def compare():
         print(removeNum)
         print('你打對',playerInput,'了')
     if(not flag_success):#沒打對的話
-        monsterHP += 10 #monster加血
+        monsterHP += 5 #monster加血
         bulletPic = null #沒擊中的話 子彈圖案變空的
         playerTextColorFlag = flag_success
         alphaSolidFlag = 2 #打錯背景變紅
@@ -147,6 +147,7 @@ def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
     if(mode == 0):
         return Count
 
+HITBOX = False
 #nonPygame side
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
 f = open(path + '/dictionary.txt','r') #開啟字典
@@ -297,7 +298,7 @@ monster_moveSpeed = 5 #移動速度
 monster_dy = monster_moveSpeed
 monster_dx = monster_moveSpeed
 #monsters HP
-monsterHP_origin = 20
+monsterHP_origin = 100
 monsterHP = monsterHP_origin
 monsterHPheight = 20
 monsterHPwidth = 180
@@ -504,9 +505,10 @@ while running:
     monster_widthShift = monster_rightShift - monster_leftShift
     monster_heightShift = -monster_topShift
     #monster的Hitbox
-    RECTCOORD = [monsterRect.left + monster_leftShift, monsterRect.top + monster_topShift, monsterWidth + monster_widthShift , monsterHeight + monster_heightShift]
-    HEROhitbox = pygame.Rect(RECTCOORD)
-    pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
+    if(HITBOX):
+        RECTCOORD = [monsterRect.left + monster_leftShift, monsterRect.top + monster_topShift, monsterWidth + monster_widthShift , monsterHeight + monster_heightShift]
+        HEROhitbox = pygame.Rect(RECTCOORD)
+        pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
     HIT_direct = False
     Condition12 = (heroRect.left + leftShift <= monsterRect.right + monster_rightShift and heroRect.right + rightShift >= monsterRect.right + monster_rightShift) #hero在monster右邊
     Condition13 = (heroRect.left + leftShift <= monsterRect.left + monster_leftShift and heroRect.right + rightShift >= monsterRect.left + monster_leftShift) #hero在monster左邊
@@ -529,9 +531,10 @@ while running:
             TextPosition[j][1] += Text_dy[j]
             TextRect.center = TextPosition[j] #TextCenter更新回去Text真的位置
             #Text的Hitbox
-            RECTCOORD = [TextRect.left, TextRect.top, TextRect.width, TextRect.height]
-            TEXThitbox = pygame.Rect(RECTCOORD)
-            pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
+            if(HITBOX):
+                RECTCOORD = [TextRect.left, TextRect.top, TextRect.width, TextRect.height]
+                TEXThitbox = pygame.Rect(RECTCOORD)
+                pygame.draw.rect(screen, (0,0,0), TEXThitbox, 3)
             #碰到hero就扣血
             Condition0 = (TextRect.left <= heroRect.right + rightShift and TextRect.right >= heroRect.right + rightShift) #字在hero右邊
             Condition1 = (TextRect.left <= heroRect.left + leftShift and TextRect.right >= heroRect.left + leftShift) #字在hero左邊
@@ -554,12 +557,11 @@ while running:
     #----------heroBlit-----------# 
     heroRect.center = (heroCenter)
     screen.blit(heroPic,heroRect.topleft)
-
     #HERO的Hitbox
-    RECTCOORD = [heroRect.left + leftShift, heroRect.top + topShift, heroWidth + widthShift , heroHeight + heightShift]
-    HEROhitbox = pygame.Rect(RECTCOORD)
-    pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
-
+    if(HITBOX):
+        RECTCOORD = [heroRect.left + leftShift, heroRect.top + topShift, heroWidth + widthShift , heroHeight + heightShift]
+        HEROhitbox = pygame.Rect(RECTCOORD)
+        pygame.draw.rect(screen, (0,0,0), HEROhitbox, 3)
     #-----------------------------#
     #-------------------------------------------------Bullet飛行---------------------------------------------------#
     #平常子彈一直追蹤英雄位置(最新位置在index 0)
@@ -606,15 +608,15 @@ while running:
     #-------扣血--------#
     if((HIT or HIT_direct) and not gameOver and not gameStart): #HIT撞到字 HIT_direct撞到怪
         if(HIT):
-            heroHP -= 5 #扣的血量
+            heroHP -= 10 #扣的血量
             print('hit by a word!')
         if(HIT_direct):
-            heroHP -= 10
+            heroHP -= 15
             print('hit by monster!')
         heroHPcolor = [255,103,92]
         print('HIT')
     if(HIT_monster):
-        monsterHP -= removeNum*2 #消一個monster扣5HP
+        monsterHP -= removeNum*3 #傷害 = 消一個*2
         monsterHPcolor = [255,103,92]
         print('monster get hit!')
     #血量不會突破限制
