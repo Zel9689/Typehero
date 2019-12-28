@@ -9,13 +9,12 @@ import math
 #全部調回預設值
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold, HPchangeColorHold01, HPchangeColorHold02\
-        , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag, HPchangeColor, timePast\
+        , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag, HPchangeColor, timeTotal\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
-                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, hero_dx, hero_dy
+                , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, hero_dx, hero_dy, playerInput
     #Before Loop
     gameStart = True #遊戲開始
     gameOver = False #遊戲結束
-    running = True #視窗執行中
     monsterMode = True #monster哪一張圖片
     heroBulletFlag = [] #子彈一開始沒出現
     Count01 = 0 #monster換圖片的counter
@@ -38,6 +37,7 @@ def gameReset():
     enterBool02 =False 
     needMessage = False #需要遊戲訊息
     reset = False
+    playerInput = ''
     heroHP = heroHP_origin
     monsterHP = monsterHP_origin
     heroCenter = heroCenter_origin.copy()
@@ -47,7 +47,7 @@ def gameReset():
     hero_dx = hero_moveSpeed
     hero_dy = hero_moveSpeed
     Count_bullet = 0
-    timePast = []
+    timeTotal = []
     hitboxShift()
     Text.clear()
     Text_dx.clear()
@@ -149,6 +149,7 @@ def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
 
 HITBOX = False
 #nonPygame side
+consolePass = True
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
 f = open(path + '/dictionary.txt','r') #開啟字典
 word_cache = f.read()
@@ -176,6 +177,9 @@ while(True):
         Set = int(input())
     except(ValueError):
         print('請輸入數字')
+    except(EOFError): #輸入ctrl+z or ctrl+c
+        consolePass = False
+        break
     else:
         if(Set > len(wordCollection) - 1):
             print('請輸入選項內的數字')
@@ -183,12 +187,15 @@ while(True):
             break
 for i in wordCollection:
     i.pop(0)
-while(True):
+while(True and consolePass):
     print('選擇難度:(0)簡單 (1)普通 (2)緊張 (3)刺激 (4)怕: ',end = '')
     try:
         Difficult = int(input())
     except(ValueError):
         print('請輸入數字')
+    except(EOFError): #輸入ctrl+z or ctrl+c
+        consolePass = False
+        break
     else:
         if(Difficult > 4):
             print('請輸入選項內的數字')
@@ -308,10 +315,12 @@ clock = pygame.time.Clock()
 lastTick = 0
 
 #BeforeLoop
-changeDirect = False
-gameReset()
+changeDirect = False #角色換方向旗標
+running = True #視窗執行中
+if(consolePass): #console端停止就不呼叫Reset
+    gameReset()
 #Loop
-while running:
+while running and consolePass: #console端停止就不進去
     clock.tick(30) #fps
     #輸入事件新增位置
     for event in pygame.event.get():
@@ -714,7 +723,8 @@ while running:
         if(heroHP == 0):
             hero_dy = 0
             hero_dx = 0
-    if(needMessage): #按enter繼續的訊息
+    if(needMessage):
+        #訊息render
         gameText = playerFont.render(gameMessage, 0, messageColor)
         gameText_small = Font.render(gameMessage_small, 0, (255,255,255))
         if(gameStart):
@@ -726,8 +736,8 @@ while running:
         gameText_smallRect = gameText_small.get_rect()
         X = math.floor(resolution[0]/2-gameTextRect.width/2) #位置置中
         Y = math.floor(resolution[1]/2-gameTextRect.height/2) #位置置中
-        gameTextRect.topleft = (X, Y)
-        gameText_smallRect.topleft = (X, Y+150)
+        gameTextRect.topleft = (X, Y) #大字的Rect
+        gameText_smallRect.topleft = (X, Y+150) #按enter繼續的Rect
         screen.blit(gameText, gameTextRect.topleft)
         screen.blit(gameText_small, gameText_smallRect.topleft)
         #--------外框--------#
@@ -736,11 +746,12 @@ while running:
         pygame.draw.rect(screen, (248,210,34), MESSAGErect1, 6) #外框顏色
     if(gameStart):
         startTime = pygame.time.get_ticks()
-    if(gameOver and not timePast): #timePast如果為空回傳False
+    if(gameOver and not timeTotal): #timePast如果為空回傳False
         endTime = pygame.time.get_ticks()
-        timePast = (endTime - startTime)/1000 #經過timePast秒
-        print('遊戲結束，花了', timePast, '秒')
-    
+        timeTotal = (endTime - startTime)/1000 #經過timeTotal秒
+        print('遊戲結束，花了', timeTotal, '秒')
+    #nowTime = pygame.time.get_ticks()
+
     if(reset):
         gameReset()
     #----------------------------#
