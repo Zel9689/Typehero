@@ -9,7 +9,7 @@ import math
 #全部調回預設值
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold, HPchangeColorHold01, HPchangeColorHold02\
-        , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag, HPchangeColor\
+        , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag, HPchangeColor, timePast\
             , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
                 , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, hero_dx, hero_dy
     #Before Loop
@@ -47,6 +47,7 @@ def gameReset():
     hero_dx = hero_moveSpeed
     hero_dy = hero_moveSpeed
     Count_bullet = 0
+    timePast = []
     hitboxShift()
     Text.clear()
     Text_dx.clear()
@@ -58,7 +59,6 @@ def gameReset():
     bulletCenter_cache.clear()
     heroBulletFlag.clear()
     randomWordsAngle() #先產生一個字
-
 #hitboxShift 讓hitbox更接近玩家想像
 def hitboxShift():
     global leftShift, rightShift, topShift, widthShift, heightShift
@@ -714,7 +714,7 @@ while running:
         if(heroHP == 0):
             hero_dy = 0
             hero_dx = 0
-    if(needMessage):
+    if(needMessage): #按enter繼續的訊息
         gameText = playerFont.render(gameMessage, 0, messageColor)
         gameText_small = Font.render(gameMessage_small, 0, (255,255,255))
         if(gameStart):
@@ -734,6 +734,13 @@ while running:
         RECTCOORD = [gameTextRect.left - 10, gameTextRect.top - 5, gameTextRect.width + 20, gameTextRect.height + 10]
         MESSAGErect1 = pygame.Rect(RECTCOORD)
         pygame.draw.rect(screen, (248,210,34), MESSAGErect1, 6) #外框顏色
+    if(gameStart):
+        startTime = pygame.time.get_ticks()
+    if(gameOver and not timePast): #timePast如果為空回傳False
+        endTime = pygame.time.get_ticks()
+        timePast = (endTime - startTime)/1000 #經過timePast秒
+        print('遊戲結束，花了', timePast, '秒')
+    
     if(reset):
         gameReset()
     #----------------------------#
@@ -744,6 +751,7 @@ while running:
         Text.pop()
         Text_dx.pop()
         Text_dy.pop()
+        randomText.pop()
         TextPosition.pop()
     if(len(bulletArray) > 14):
         bulletArray.pop()
