@@ -61,19 +61,21 @@ def gameReset():
     randomWordsAngle() #先產生一個字
 #hitboxShift 讓hitbox更接近玩家想像
 def hitboxShift():
-    global leftShift, rightShift, topShift, widthShift, heightShift
+    global leftShift, rightShift, topShift, bottomShift, widthShift, heightShift
     if(not changeDirect):
         leftShift = 25
         rightShift = -70
         topShift = 17
+        bottomShift = -15
         widthShift = rightShift - leftShift
-        heightShift = -topShift
+        heightShift = -topShift - 15
     if(changeDirect):
         leftShift = 70
         rightShift = -25
         topShift = 17
+        bottomShift = -15
         widthShift = rightShift - leftShift
-        heightShift = -topShift
+        heightShift = -topShift - 15
 
 #文字隨機出和隨機角度
 def randomWordsAngle():
@@ -147,7 +149,7 @@ def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
     if(mode == 0):
         return Count
 
-HITBOX = False
+HITBOX = True
 #nonPygame side
 consolePass = True
 path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
@@ -522,9 +524,9 @@ while running and consolePass: #console端停止就不進去
     Condition12 = (heroRect.left + leftShift <= monsterRect.right + monster_rightShift and heroRect.right + rightShift >= monsterRect.right + monster_rightShift) #hero在monster右邊
     Condition13 = (heroRect.left + leftShift <= monsterRect.left + monster_leftShift and heroRect.right + rightShift >= monsterRect.left + monster_leftShift) #hero在monster左邊
     Condition14 = (heroRect.left + leftShift >= monsterRect.left + monster_leftShift and heroRect.right + rightShift <= monsterRect.right + monster_rightShift) #hero在monster右邊和左邊之間
-    Condition15 = (heroRect.top + topShift <= monsterRect.bottom and heroRect.bottom >= monsterRect.bottom) #hero在monster下面
-    Condition16 = (heroRect.bottom >= monsterRect.top + monster_topShift and heroRect.top + topShift <= monsterRect.top + monster_topShift) #hero在monster上面
-    Condition17 = (heroRect.bottom <= monsterRect.bottom and heroRect.top + topShift >= monsterRect.top + monster_topShift) #hero在monster上面和下面之間
+    Condition15 = (heroRect.top + topShift <= monsterRect.bottom and heroRect.bottom + bottomShift >= monsterRect.bottom) #hero在monster下面
+    Condition16 = (heroRect.bottom + bottomShift >= monsterRect.top + monster_topShift and heroRect.top + topShift <= monsterRect.top + monster_topShift) #hero在monster上面
+    Condition17 = (heroRect.bottom + bottomShift <= monsterRect.bottom and heroRect.top + topShift >= monsterRect.top + monster_topShift) #hero在monster上面和下面之間
     if((Condition12 or Condition13 or Condition14) and (Condition15 or Condition16 or Condition17)): #碰撞條件
         HIT_direct = True 
     #--------------------------------#
@@ -548,9 +550,9 @@ while running and consolePass: #console端停止就不進去
             Condition0 = (TextRect.left <= heroRect.right + rightShift and TextRect.right >= heroRect.right + rightShift) #字在hero右邊
             Condition1 = (TextRect.left <= heroRect.left + leftShift and TextRect.right >= heroRect.left + leftShift) #字在hero左邊
             Condition2 = (TextRect.left >= heroRect.left + leftShift and TextRect.right <= heroRect.right + rightShift) #字在hero右邊和左邊之間
-            Condition3 = (TextRect.top <= heroRect.bottom and TextRect.bottom >= heroRect.bottom) #字在hero下面
+            Condition3 = (TextRect.top <= heroRect.bottom + bottomShift and TextRect.bottom >= heroRect.bottom + bottomShift) #字在hero下面
             Condition4 = (TextRect.bottom >= heroRect.top + topShift and TextRect.top <= heroRect.top + topShift) #字在hero上面
-            Condition5 = (TextRect.bottom <= heroRect.bottom and TextRect.top >= heroRect.top + topShift) #字在hero上面和下面之間
+            Condition5 = (TextRect.bottom <= heroRect.bottom + bottomShift and TextRect.top >= heroRect.top + topShift) #字在hero上面和下面之間
             if((Condition0 or Condition1 or Condition2) and (Condition3 or Condition4 or Condition5)): #碰撞條件
                 HIT = True
             screen.blit(i, (TextRect.topleft))
@@ -623,7 +625,6 @@ while running and consolePass: #console端停止就不進去
             heroHP -= 15
             print('hit by monster!')
         heroHPcolor = [255,103,92]
-        print('HIT')
     if(HIT_monster):
         monsterHP -= removeNum*3 #傷害 = 消一個*2
         monsterHPcolor = [255,103,92]
