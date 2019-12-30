@@ -4,12 +4,10 @@ import os
 import random
 import math
 #1 blit per frame
-#monster每隔一段時間變化移動方式 OK
 #按下enter怪獸會跑過來
 #時間內要擊敗怪獸
 #同時被兩個字撞到的傷害不一樣
 #按左右自動轉向 (?)
-#轉向hitbox位置不變 OK
 #特殊模式：已經打過的字傷害較低
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold, HPchangeColorHold01, HPchangeColorHold02\
@@ -93,7 +91,7 @@ def randomWordsAngle():
         if(x >= 3):
             TextColor = (255,94,94)
         Text[i] = Font.render(randomText[i], False, (TextColor))
-    Text_dx.insert(0, random.randint(-3,3)) #Text_dx m~n 隨機 插入index 0
+    Text_dx.insert(0, random.choice([-3,-2,-1,1,2,3])) #Text_dx m~n 隨機 插入index 0
     Text_dy.insert(0, random.randint(-6,6)) #Text_dy m~n 隨機 插入index 0
     print(randomText)
     TextPosition.insert(0, monsterCenter.copy()) #Text位置 = monster位置
@@ -101,10 +99,11 @@ def randomWordsAngle():
     TextPosition[0][0] -= 55
     TextPosition[0][1] += 15
 
-def randomMonsterAngle(): #怪獸移動角度、速度 C^2 = A^2 + B^2
+#怪獸隨機角度、速度 C^2 = A^2 + B^2
+def randomMonsterAngle(): 
     monster_dx = 0
     minSpeed = 50 #最小速度
-    maxSpeed = 300 #最大速度
+    maxSpeed = 200 #最大速度
     monster_moveSpeed = random.randint(minSpeed,maxSpeed)
     monster_dx = random.randint(1, math.floor(math.sqrt(monster_moveSpeed))) * random.choice([1, -1])
     monster_dy = monster_moveSpeed - math.pow(monster_dx, 2)
@@ -551,11 +550,11 @@ while running and consolePass: #console端停止就不進去
         monsterPic = monster
     else: #monster圖2
         monsterPic = monsterChange
-    screen.blit(monsterPic,monsterRect.topleft)
+    monsterCenter = list(monsterRect.center)
     #monster 移動
     monsterCenter[1] += monster_dy
     monsterCenter[0] -= monster_dx
-
+    screen.blit(monsterPic,monsterRect.topleft)
     #--------------------------------#
     #---------------------------------和文字有關的--------------------------------#
     HIT = False
