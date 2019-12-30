@@ -45,3 +45,15 @@ $簡單到不行數字組$
 '7'
 '8'
 '9'
+#DIVIDER#
+$好萊塢人名$
+'Leonardo DiCaprio'
+'Benedict Cumberbatch'
+'Robert Downey Jr.'
+'Bradley Pitt'
+'Scarlett Johansson'
+'Brendan Fraser'
+'Tom Cruise'
+'Bruce Willis'
+'Johnny Depp'
+'Will Smith'

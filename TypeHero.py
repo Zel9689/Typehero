@@ -4,13 +4,17 @@ import os
 import random
 import math
 #1 blit per frame
-#monster每隔一段時間變化移動方式
+#monster每隔一段時間變化移動方式 OK
+#按下enter怪獸會跑過來
 #時間內要擊敗怪獸
-#全部調回預設值
+#同時被兩個字撞到的傷害不一樣
+#按左右自動轉向 (?)
+#轉向hitbox位置不變 OK
+#特殊模式：已經打過的字傷害較低
 def gameReset():
     global gameStart, gameOver, running, monsterMode, heroBulletFlag, alphaSolidHold, HPchangeColorHold01, HPchangeColorHold02\
         , Count01, Count02, Count03, Count04, Count05, Count_bullet, alphaSolidFlag, HPchangeColor, timeTotal\
-            , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, monster_dx, monster_dy, flag_success, enterBool, enterBool02\
+            , holdUP, holdDOWN, holdLEFT, holdRIGHT, holdBACK, flag_success, enterBool, enterBool02, monster_dx, monster_dy\
                 , needMessage, heroHP, monsterHP, heroCenter, monsterCenter, reset, hero_dx, hero_dy, playerInput
     #Before Loop
     gameStart = True #遊戲開始
@@ -41,13 +45,12 @@ def gameReset():
     heroHP = heroHP_origin
     monsterHP = monsterHP_origin
     heroCenter = heroCenter_origin.copy()
-    monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
-    monster_dy = monster_moveSpeed
-    monster_dx = monster_moveSpeed
+    monsterCenter = [math.floor(resolution[0]*5/6), math.floor(resolution[1]/2)]
     hero_dx = hero_moveSpeed
     hero_dy = hero_moveSpeed
     Count_bullet = 0
     timeTotal = []
+    [monster_dx, monster_dy] = randomMonsterAngle()
     hitboxShift()
     Text.clear()
     Text_dx.clear()
@@ -63,15 +66,15 @@ def gameReset():
 def hitboxShift():
     global leftShift, rightShift, topShift, bottomShift, widthShift, heightShift
     if(not changeDirect):
-        leftShift = 25
-        rightShift = -70
+        leftShift = 40
+        rightShift = -85
         topShift = 17
         bottomShift = -15
         widthShift = rightShift - leftShift
         heightShift = -topShift - 15
     if(changeDirect):
-        leftShift = 70
-        rightShift = -25
+        leftShift = 85
+        rightShift = -40
         topShift = 17
         bottomShift = -15
         widthShift = rightShift - leftShift
@@ -98,6 +101,15 @@ def randomWordsAngle():
     TextPosition[0][0] -= 55
     TextPosition[0][1] += 15
 
+def randomMonsterAngle(): #怪獸移動角度、速度 C^2 = A^2 + B^2
+    monster_dx = 0
+    minSpeed = 50 #最小速度
+    maxSpeed = 300 #最大速度
+    monster_moveSpeed = random.randint(minSpeed,maxSpeed)
+    monster_dx = random.randint(1, math.floor(math.sqrt(monster_moveSpeed))) * random.choice([1, -1])
+    monster_dy = monster_moveSpeed - math.pow(monster_dx, 2)
+    monster_dy = math.sqrt(monster_dy) * random.choice([1, -1])
+    return monster_dx, math.floor(monster_dy)
 #比較打對哪個字的函式
 def compare():
     global monsterHP, heroHP, playerTextColorFlag, heroBulletFlag, alphaSolidFlag, HPchangeColor, removeNum
@@ -302,7 +314,6 @@ monsterChange = pygame.image.load(os.path.join(path, 'monster02_b.png'))
 monsterChange = monsterChange.convert_alpha()
 monsterChange = pygame.transform.scale(monsterChange, (200,180)) #monster大小調整
 #monsterPosition
-monsterCenter = [math.floor(resolution[0]-monsterWidth/2), math.floor(resolution[1]/2)]
 monster_moveSpeed = 5 #移動速度
 monster_dy = monster_moveSpeed
 monster_dx = monster_moveSpeed
@@ -385,9 +396,12 @@ while running and consolePass: #console端停止就不進去
                 elif event.key == (pygame.K_LCTRL):
                     if(changeDirect):
                         changeDirect = False
+                        hitboxStayMid = 1
                     elif(not changeDirect):
                         changeDirect = True
+                        hitboxStayMid = -1
                     hitboxShift()
+                    heroCenter[0] += 40*hitboxStayMid  #因為轉方向而產生hero位置偏移的修正
                     hero = pygame.transform.flip(hero, True, False)
                     heroChange = pygame.transform.flip(heroChange, True, False)
                     heroPic = pygame.transform.flip(heroPic, True, False)
@@ -415,7 +429,7 @@ while running and consolePass: #console端停止就不進去
         if(Count01 == 5): #觸發換monster圖片
             monsterMode = not monsterMode
             Count01 = 0
-        if(Count02 == 10 and monsterHP != 0): #觸發Text產生
+        if(Count02 == 20 and monsterHP != 0): #觸發Text產生
             randomWordsAngle()
             Count02 = 0
         if(enterBool02): #按enter的動畫
@@ -432,9 +446,13 @@ while running and consolePass: #console端停止就不進去
                 playerInput = playerInput[:-1] #刪一個字
         if(not holdBACK):
             Count04 = 0
+        if(Count05 == 40 and monsterHP != 0): #觸發改變monster移動方向
+            [monster_dx, monster_dy] = randomMonsterAngle()
+            Count05 = 0
         lastTick = pygame.time.get_ticks()
         Count01 += 1
         Count02 += 1
+        Count05 += 1
         
     #-------兩個背景輪流頂替---------#
     backgroundStart -= background_dx
@@ -495,20 +513,7 @@ while running and consolePass: #console端停止就不進去
         screen.blit(playerText_enter, (X, Y))
     #-----------------------------------------------#
     #----------monsterBilt-----------#
-    #monster 移動
-    monsterCenter[1] += monster_dy
-    monsterCenter[0] -= monster_dx
     monsterRect.center = (monsterCenter) #把monsterCenter更新到真的monster位置
-    #反彈
-    if (monsterRect.top<=0 or monsterRect.bottom>=resolution[1]):
-        monster_dy *= -1
-    if (monsterRect.left<=0 or monsterRect.right>=resolution[0]):
-        monster_dx *= -1
-    if(monsterMode): #monster圖1
-        monsterPic = monster
-    else: #monster圖2
-        monsterPic = monsterChange
-    screen.blit(monsterPic,monsterRect.topleft)
     #monster的HitboxShift
     monster_leftShift = 30
     monster_rightShift = -30
@@ -529,6 +534,28 @@ while running and consolePass: #console端停止就不進去
     Condition17 = (heroRect.bottom + bottomShift <= monsterRect.bottom and heroRect.top + topShift >= monsterRect.top + monster_topShift) #hero在monster上面和下面之間
     if((Condition12 or Condition13 or Condition14) and (Condition15 or Condition16 or Condition17)): #碰撞條件
         HIT_direct = True 
+    #反彈
+    if(monsterRect.top<=0):
+        monsterRect.top = 0
+        monster_dy *= -1
+    if(monsterRect.bottom>=resolution[1]):
+        monsterRect.bottom = resolution[1]
+        monster_dy *= -1
+    if(monsterRect.left<=0):
+        monsterRect.left = 0
+        monster_dx *= -1
+    if(monsterRect.right>=resolution[0]):
+        monsterRect.right = resolution[0]
+        monster_dx *= -1
+    if(monsterMode): #monster圖1
+        monsterPic = monster
+    else: #monster圖2
+        monsterPic = monsterChange
+    screen.blit(monsterPic,monsterRect.topleft)
+    #monster 移動
+    monsterCenter[1] += monster_dy
+    monsterCenter[0] -= monster_dx
+
     #--------------------------------#
     #---------------------------------和文字有關的--------------------------------#
     HIT = False
@@ -537,9 +564,6 @@ while running and consolePass: #console端停止就不進去
         for i in Text: #i = 掃到的字
             j = Text.index(i)
             TextRect = i.get_rect()
-            #字移動
-            TextPosition[j][0] += Text_dx[j]
-            TextPosition[j][1] += Text_dy[j]
             TextRect.center = TextPosition[j] #TextCenter更新回去Text真的位置
             #Text的Hitbox
             if(HITBOX):
@@ -555,15 +579,18 @@ while running and consolePass: #console端停止就不進去
             Condition5 = (TextRect.bottom <= heroRect.bottom + bottomShift and TextRect.top >= heroRect.top + topShift) #字在hero上面和下面之間
             if((Condition0 or Condition1 or Condition2) and (Condition3 or Condition4 or Condition5)): #碰撞條件
                 HIT = True
-            screen.blit(i, (TextRect.topleft))
             #字反彈
             if (TextRect.top <= 0 or TextRect.bottom >= resolution[1]):
                 Text_dy[j] *= -1
+            #字移動
+            TextPosition[j][0] += Text_dx[j]
+            TextPosition[j][1] += Text_dy[j]
             #字超過螢幕左邊就刪掉
             if (TextRect.right <= 0):
                 removeText(j,1)
             elif (TextRect.left >= resolution[0]):
                 removeText(j,1)
+            screen.blit(i, (TextRect.topleft))
     #----------------------------------------------------------------------------# 
     #----------heroBlit-----------# 
     heroRect.center = (heroCenter)
@@ -611,7 +638,7 @@ while running and consolePass: #console端停止就不進去
                     bulletArray.pop(j)
                     bulletCenter_cache.pop(j)
                     heroBulletFlag.pop(j)
-        screen.blit(i ,bulletRect[j].topleft) ##不能放在if(heroBulletFlag[j] == 1)裡面??? 不知道為什麼
+        screen.blit(i ,bulletRect[j].topleft) #一次tick只要blit一次物件就好
     #---------------------------------------------------------------------------------------------------------------#
     #--------------------血條顯示------------------------------------------------#
     heroHPcolor = [255,255,255]
