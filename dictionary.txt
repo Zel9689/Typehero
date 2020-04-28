@@ -1,4 +1,4 @@
-$¥æ³q³æ¦r²Õ$
+$äº¤é€šå–®å­—çµ„$
 'front seat'
 'back seat'
 'steering wheel'
@@ -10,7 +10,7 @@ $¥æ³q³æ¦r²Õ$
 'bicycle'
 'motorcycle'
 #DIVIDER#
-$python«ü¥O²Õ$
+$pythonæŒ‡ä»¤çµ„$
 'print'
 'import'
 'True'
@@ -22,7 +22,7 @@ $python«ü¥O²Õ$
 'break'
 'eval'
 #DIVIDER#
-$Take On Meºqµü²Õ$
+$Take On Meæ­Œè©çµ„$
 'take'
 'on'
 'me'
@@ -34,7 +34,7 @@ $Take On Meºqµü²Õ$
 'or'
 'two'
 #DIVIDER#
-$Â²³æ¨ì¤£¦æ¼Æ¦r²Õ$
+$ç°¡å–®åˆ°ä¸è¡Œæ•¸å­—çµ„$
 '0'
 '1'
 '2'
@@ -46,7 +46,7 @@ $Â²³æ¨ì¤£¦æ¼Æ¦r²Õ$
 '8'
 '9'
 #DIVIDER#
-$¦nµÜ¶õ¤H¦W$
+$å¥½èŠå¡¢äººå$
 'Leonardo DiCaprio'
 'Benedict Cumberbatch'
 'Robert Downey Jr.'

@@ -160,11 +160,11 @@ def removeText(j,mode): #j=字的index mode=0畫面上全消 mode=1只消一個
     if(mode == 0):
         return Count
 
-HITBOX = True
+HITBOX = False
 #nonPygame side
 consolePass = True
-path = os.path.split(os.path.abspath(__file__))[0] #遊戲資料夾位址
-f = open(path + '/dictionary.txt','r') #開啟字典
+path = os.path.dirname(os.path.abspath(__file__)) #遊戲資料夾位址
+f = open('./dictionary.txt','r') #開啟字典
 word_cache = f.read()
 f.close()
 wordCollection = [[]]
@@ -239,7 +239,7 @@ backgroundStart02 = backgroundStart + 1492
 alphaSolid = pygame.Surface(screen.get_size()) #背景閃一下半透明顏色的Surface
 
 #words
-fontLocation = Pyfont.match_font('Minecraft Regular')
+fontLocation = Pyfont.match_font('Minecraft')
 FontSize = 30
 Font = Pyfont.Font(fontLocation, FontSize)
 playerFont = Pyfont.Font(fontLocation, 100)
