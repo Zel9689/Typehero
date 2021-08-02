@@ -28,6 +28,14 @@ D_iceball_speed = 10
 D_word_dmg = 20
 D_word_speed = 10
 
+# List of Players
+Players = []
+# List of Words
+Words = []
+# List of Monsters
+Monsters = []
+# List of Bullets
+Bullets = []
 class Gamemode(Enum):
     Menu = auto()
     Start = auto()
@@ -41,26 +49,21 @@ class Team(Enum):
     TeamD = auto()
 
 class Character:
-    def __init__(self, name, team):
+    def __init__(self, name, team, position, direction):
         self.name = name
         self.team = team
         self.max_hp = D_max_hp
         self.hp = self.max_hp
-        # self.position
-        # self.direction
+        self.position = position
+        self.direction = direction
         self.speed = D_speed
         self.is_alive = True
         self.dmg = 0
-    def move_up(self):
-        pass
-    def move_down(self):
-        pass
-    def move_left(self):
-        pass
-    def move_right(self):
-        pass
     def rush(self):
-        pass
+        if(self.isDOWN):
+            return
+        else:
+            self.isUP = True
     def get_hit(self, obj):
         dmg = obj.dmg
         if(obj.owner.team is not self.team):
@@ -85,12 +88,14 @@ class Character:
             return -1 # tell caller shoot failed
 
 class Player(Character):
-    def __init__(self, name, team):
-        super().__init__(name, team)
+    def __init__(self, name, team, position, direction):
+        Players.append(self)
+        super().__init__(name, team, position, direction)
         self.max_hp = D_player_max_hp
         self.hp = self.max_hp
         self.round = []
-        self.max_round = D_max_round 
+        self.max_round = D_max_round
+        self.input = ''
     def change_shoot_mode(self, mode):
         pass
     def save_round(self, bullet):
@@ -98,8 +103,9 @@ class Player(Character):
             self.round.append(bullet)
 
 class Monster(Character):
-    def __init__(self, name):
-        super().__init__(name, Team.Monster)
+    def __init__(self, name, position, direction):
+        Monsters.append(self)
+        super().__init__(name, Team.Monster, position, direction)
         self.max_hp = D_monster_max_hp
         self.hp = self.max_hp
         self.dmg = D_monster_dmg
@@ -112,16 +118,18 @@ class Monster(Character):
 
 class Bullet:
     def __init__(self, owner):
+        Bullets.append(self)
         self.owner = owner
         self.dmg = D_normal_bullet_dmg
         self.speed = D_normal_bullet_speed
+        self.isFired = False
         self.can_through = False
-    def fire(self, origin, direction):
-        # go to the direction from origin
-        pass
+    def fire(self):
+        # from position to the direction
+        self.isFired = True
     def extra_fx():
         pass
-    def stop(self, character):
+    def stop(self, obj):
         self.extra_fx()
         if(self.can_through):
             pass
@@ -146,7 +154,24 @@ class IceBall(Bullet):
         pass
         # freeze enemy
 class Word(Bullet):
-    def __init__(self, owner):
+    def __init__(self, owner, content):
+        Words.append(self)
         super().__init__(owner)  
         self.dmg = D_word_dmg
         self.speed = D_word_speed
+        self.content = content
+    def changeContent(self, content):
+        self.content = content
+
+
+class BG():
+    def __init__(self, filename1, filename2):
+        self.now = filename1
+        self.next = filename2
+    def set_next(self, filename):
+        self.next = filename
+    def change(self):
+        f = self.now
+        self.now = self.next
+        self.next = f
+    
