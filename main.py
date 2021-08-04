@@ -1,3 +1,8 @@
+# todo: 
+# 死掉的角色從list刪除，飛出畫面的、停止的子彈從list刪除
+# GJK碰撞實作
+# 根據狀態更改角色外觀
+# 角色八個方向
 import pygame
 import math
 import GameObject as GO
@@ -16,12 +21,13 @@ def delOutsideElement():
     pass
 
 # 圖片資訊封裝
-p1_img = GO.Img('asset/player01.png', (150,120))
 bg_img = GO.Img('asset/background.png', (1280, 768))
 # 遊戲物件
-p1 = GO.Player(p1_img, 'zel', GO.Team.TeamA, [640, 360], (1, 0))
-bg = GO.Background(bg_img, [0, 0])
-bg2 = GO.Background(bg_img, [1280, 0])
+p1 = GO.Alien('zel', GO.Team.TeamA, (120, 360), (1, 0))
+m1 = GO.Bacteria('Baekk', (1000, 360), (-1, 0))
+bg = GO.Background(bg_img, (0, 0))
+bg2 = GO.Background(bg_img, (1280, 0))
+GO.Can_hurt(attacker=GO.Bullets, victim=GO.Players)
 
 
 lastTick = 0
@@ -38,8 +44,7 @@ while True:
             if(event.key == pygame.K_RIGHT):
                 p1.isRight = 1
             if(event.key == pygame.K_LCTRL):
-                p1.save_round(GO.NormalBall(p1))
-                print(len(p1.round), '顆子彈')
+                p1.save_round(GO.IceBall())
             if(event.key == pygame.K_RETURN):
                 p1.shoot()
         if event.type == pygame.KEYUP:
@@ -66,6 +71,7 @@ while True:
     #     bg2.moveto((1280, 0))
     ## 圖層渲染
     [i.blit() for i in GO.Backgrounds]
-    [i.blit() for i in GO.Bullets if i.isFired is True]
     [i.blit() for i in GO.Players]
+    [i.blit() for i in GO.Monsters]
+    [i.blit() for i in GO.Bullets if i.isFired is True]
     pygame.display.update()
