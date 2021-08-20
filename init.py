@@ -1,6 +1,6 @@
 import pygame
 def getCollectionList():
-    f = open('./dictionary.txt','r') #開啟字典
+    f = open('./asset/dictionary.txt','r') #開啟字典
     word_cache = f.read()
     f.close()
     wordCollection = [[]]
@@ -19,8 +19,6 @@ def getCollectionList():
 #init
 wordCollection = getCollectionList()
 pygame.init()
-pygame.font.init()
 pygame.display.set_caption("Type Hero")
 resolution = [1280, 768]
 screen = pygame.display.set_mode(resolution)
-lastTick = 0

@@ -3,6 +3,8 @@ import os
 import math
 from enum import Enum, auto
 from init import screen
+from CollisionDetection import Collider, GJK
+import numpy as np
 
 # 遊戲資料夾位址
 path = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +27,7 @@ D_normal_bullet_speed = 10
 D_fireball_dmg = 2
 D_fireball_speed = 15
 D_iceball_dmg = 20
-D_iceball_speed = 10
+D_iceball_speed = 50
 D_word_dmg = 20
 D_word_speed = 10
 
@@ -59,6 +61,21 @@ class Img:
     def __init__(self, path, size):
         self.path = path
         self.size = size
+def ColliderHelper(x):
+    topleft = np.add(x.position, x.Rect.topleft)
+    topright = np.add(x.position, x.Rect.topright)
+    bottomleft = np.add(x.position, x.Rect.bottomleft)
+    bottomright = np.add(x.position, x.Rect.bottomright)
+    return Collider((
+    (bottomleft[0], bottomleft[1], 0),\
+    (bottomright[0], bottomright[1], 0),\
+    (topleft[0], topleft[1], 0),\
+    (topright[0], topright[1], 0)\
+    ))
+def is_collision(i, j):
+    i = ColliderHelper(i)
+    j = ColliderHelper(j)
+    return GJK(i, j)
 def Can_hurt(attacker, victim, both_way=False):
     # attacker, victim: List of Objs
     Obj_relations.append({'attacker':attacker, 'victim':victim, 'both_way':both_way})
@@ -71,13 +88,14 @@ def collision_dmg():
             if(i.dmg == 0):
                 continue
             for j in victim:
-                if(i.GJK_detection(j) is True):
+                if(is_collision(i, j) is True):
                     j.hurt(i)
+                    print(j.name, j.hp)
                     if(both_way is True):
                         i.hurt(j)
 class _NeedRender:
     def __init__(self, position):
-        self.position = position
+        self.position = position # position是該物件topleft的絕對位置
         self.PygameObj = None
         self.Rect = None
     def blit(self):
@@ -88,7 +106,7 @@ class _NeedRender:
         self.PygameObj  = pygame.transform.scale(self.PygameObj , self.img.size)
         self.Rect = self.PygameObj.get_rect() 
     def move(self, diffXYList):
-        self.position = (self.position[0] + diffXYList[0], self.position[1] + diffXYList[1])
+        self.position = np.add(self.position, diffXYList)
     def moveto(self, XYList):
         self.position = (XYList[0], XYList[1])
     def GJK_detection(self, stuff):
@@ -98,6 +116,7 @@ class _Character(_NeedRender):
         super().__init__(position)
         self.name = name
         self.team = team
+        self.owner = self
         self.direction = direction
         self.is_alive = True
         self.dmg = 0
@@ -134,6 +153,7 @@ class _Player(_Character):
         self.max_hp = D_player_max_hp
         self.hp = self.max_hp
         self.max_round = D_max_round
+        self.speed = D_player_speed
         self.input = ''
         self.isUp = 0
         self.isDown = 0
@@ -148,10 +168,9 @@ class _Player(_Character):
         if(self.isUp + self.isDown + self.isLeft + self.isRight != 0):
             direction = [self.isLeft * -1 + self.isRight * 1 , self.isUp * -1 + self.isDown * 1]
             if(abs(direction[0] + direction[1]) != 1):
-                direction[0] *= 0.7071
-                direction[1] *= 0.7071
+                direction = np.multiply(direction, 0.7071)
             self.direction = tuple(direction)
-            self.move((direction[0] * self.speed, direction[1] * self.speed))
+            self.move(np.multiply(direction, self.speed))
 class Alien(_Player):
     def __init__(self, name, team, position, direction):
         super().__init__(name, team, position, direction)
@@ -162,6 +181,7 @@ class _Monster(_Character):
         super().__init__(name, Team.Monster, position, direction)
         Monsters.append(self)
         self.dmg = D_monster_dmg
+        self.hp = D_monster_max_hp
         self.max_hp = D_monster_max_hp
         self.speed = D_monster_speed
     def random_walk(self):
@@ -193,7 +213,7 @@ class _Bullet(_NeedRender):
         self.fired_direction = owner.direction
         self.dmg = self.fired_dmg
     def fly(self):
-        self.move((self.fired_direction[0] * self.speed, self.fired_direction[1] * self.speed))
+        self.move(np.multiply(self.fired_direction, self.speed))
     def extra_fx():
         pass
     def stop(self, obj):
