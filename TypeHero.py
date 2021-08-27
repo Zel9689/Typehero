@@ -1,13 +1,3 @@
-# todo: 
-# 死掉的角色從list刪除，飛出畫面的、停止的子彈從list刪除
-# GJK碰撞實作
-# 根據狀態更改角色外觀
-# 碰撞一次只會造成一次傷害
-# 輸入字顯示在畫面上
-# Word子彈的顯示
-# 打入正確的字後、存子彈
-# 血量顯示
-
 ###### 多人遊戲的物件是從server獲取Word Player Monster物件
 # tips: 要建screen、loop中更新screen
 #       要建Surface、Surface才能用get_rect、取到的rect才能移動他，圖片也是種Surface
@@ -15,19 +5,6 @@
 import pygame
 import math
 import GameObject as GO
-#比較打對哪個字的函式
-def isCorrect(player):
-    if(player.input in GO.Words):
-        return True
-    else:
-        return False
-#專門刪除List內的字
-def delWord(word):
-    while(word in GO.Words):
-        GO.Words.remove(word)
-# 跑出畫面外的元素刪除
-def delOutsideElement():
-    pass
 
 # 圖片資訊封裝
 bg_img = GO.Img('asset/background.png', (1280, 768))
@@ -37,17 +14,20 @@ m1 = GO.Bacteria('Baekk', (1000, 360), (-1, 0))
 m1 = GO.Bacteria('Baekk2', (1200, 360), (-1, 0))
 bg = GO.Background(bg_img, (0, 0))
 bg2 = GO.Background(bg_img, (1280, 0))
-GO.Can_hurt(attacker=GO.Bullets, victim=GO.Players)
-GO.Can_hurt(attacker=GO.Bullets, victim=GO.Monsters)
-GO.Can_hurt(attacker=GO.Words, victim=GO.Players)
-GO.Can_hurt(attacker=GO.Monsters, victim=GO.Players)
+# 物件關係
+GO.TriggerRegister(type='collision', attacker=GO.Bullets, victim=GO.Players)
+GO.TriggerRegister(type='collision', attacker=GO.Bullets, victim=GO.Monsters)
+GO.TriggerRegister(type='collision', attacker=GO.Words, victim=GO.Players)
+GO.TriggerRegister(type='collision', attacker=GO.Monsters, victim=GO.Players)
+# 暴露在main loop的setTimeout要新增一個True在List中，當lock flag
+GO.TimerFlags = [True]
+# for debug
+GO.Words = [GO.Word('a'), GO.Word('b'), GO.Word('c'), GO.Word('c'), GO.Word('b'), GO.Word('c')]
 
-
-
-lastTick = 0
+isHoldBackspace = False
 running = True
 while running:
-    pygame.time.Clock().tick(60)
+    pygame.time.Clock().tick(30)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -61,12 +41,24 @@ while running:
             if(event.key == pygame.K_RIGHT):
                 p1.isRight = 1
             if(event.key == pygame.K_LCTRL):
-                p1.save_round(GO.IceBall())
-            if(event.key == pygame.K_RETURN):
                 p1.shoot()
-            if(event.key == pygame.K_r):
+            if(event.key == pygame.K_RETURN):
+                p1.commit()
+            if(event.key == pygame.K_F2):
                 for i in GO.Monsters:
                     i.hp = 10000
+            if(event.key == pygame.K_BACKSPACE):
+                p1.input = p1.input[:-1]
+                print(p1.input)
+                isHoldBackspace = True
+                HoldBackspaceTick = pygame.time.get_ticks()
+            if(event.key == pygame.K_ESCAPE):
+                p1.input = ''
+            if(event.key != pygame.K_RETURN 
+            and event.key != pygame.K_ESCAPE
+            and event.key != pygame.K_BACKSPACE):
+                p1.input += event.unicode
+                print(p1.input)
         if event.type == pygame.KEYUP:
             if(event.key == pygame.K_UP):
                 p1.isUp = 0
@@ -76,13 +68,19 @@ while running:
                 p1.isLeft = 0
             if(event.key == pygame.K_RIGHT):
                 p1.isRight = 0
-    for i in GO.Players:
-        i.updateCoordinate()
+            if(event.key == pygame.K_BACKSPACE):
+                isHoldBackspace = False
+    [i.updateCoordinate() for i in GO.Players]
     [i.fly() for i in GO.Bullets if i.isFired is True]
-    GO.collision_dmg()
-    ## 延時性任務
-    # if(pygame.time.get_ticks() - lastTick >= 5000):
-    #     lastTick = pygame.time.get_ticks()
+    [GO.Bullets.remove(i) for i in GO.Bullets if(i.isFired is True and i.isOutOfScreen())]
+    GO.CollisionDetection()
+    # 暴露在main loop的setTimeout記得在TimerFlags加一個True
+    GO.setTimeout(lambda: print('setTimeout 5s'), 5000, 0)
+    if(isHoldBackspace and pygame.time.get_ticks() - HoldBackspaceTick >= 400):
+        p1.input = p1.input[:-1]
+        print(p1.input)
+
+    
     ## 背景移動
     # bg.move((-5, 0))
     # bg2.move((-5, 0))
@@ -90,6 +88,8 @@ while running:
     #     bg.moveto((1280, 0))
     # if(bg2.position[0] + bg2.Rect.right <= 0):
     #     bg2.moveto((1280, 0))
+    ## 執行延時任務
+    [i.exec() for i in GO.Timers]
     ## 圖層渲染
     [i.blit() for i in GO.Backgrounds]
     [i.blit() for i in GO.Players]
